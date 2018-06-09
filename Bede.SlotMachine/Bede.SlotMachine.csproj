@@ -5,4 +5,8 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Bede.SlotMachine.Engine\Bede.SlotMachine.Engine.csproj" />
+  </ItemGroup>
+
 </Project>

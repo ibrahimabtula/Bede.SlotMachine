@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bede.SlotMachine.Engine
+namespace ClassLibrary1
 {
     public class Class1
     {
