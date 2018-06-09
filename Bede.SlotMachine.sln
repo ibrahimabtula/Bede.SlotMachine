@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2018
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bede.SlotMachine", "Bede.SlotMachine\Bede.SlotMachine.csproj", "{1DBBAC85-355A-4DAF-8CC9-86A227508C02}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bede.SlotMachine.Engine", "Bede.SlotMachine.Engine\Bede.SlotMachine.Engine.csproj", "{EA807956-BEE8-40A6-A2F8-BEA0E032DEF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA807956-BEE8-40A6-A2F8-BEA0E032DEF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA807956-BEE8-40A6-A2F8-BEA0E032DEF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA807956-BEE8-40A6-A2F8-BEA0E032DEF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA807956-BEE8-40A6-A2F8-BEA0E032DEF4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
