@@ -5,41 +5,41 @@ using System.Linq;
 
 namespace Bede.SlotMachine.Engine
 {
-    public class SlotEngine
+    public class SlotEngine : ISlotEngine
     {
-        private int _dimensionCount = 5;
-        private int _symbolCount = 4;
+        private int _dimensionCount = 4;
+        private int _symbolCount = 3;
         private double _balance;
         private double _stake;
         private double _currentWin = 0;
         private bool _staked = false;
 
-        private IList<SpinResult> _spinHistory;
+        private IList<ISpinResult> _spinHistory;
         
         public SlotEngine()
         {
-            _spinHistory = new List<SpinResult>();
+            _spinHistory = new List<ISpinResult>();
         }
 
-        public IEnumerable<SpinResult> SpinHistory
+        public IEnumerable<ISpinResult> SpinHistory
         {
             get { return _spinHistory; }
         }
 
-        public double Balance
+        public double Stake
         {
-            get { return _balance; }
+            get { return _stake; }
+            set { _stake = value; }
         }
 
         public void EnterDeposit(double value)
         {
-            this._balance = value;
+            this._balance += value;
         }
 
-        public void EnterStake(double value)
+        public double GetBalance()
         {
-            this._stake = value;
-            MarkAsStaked();
+            return _balance;
         }
 
         public double GetCurrentWin()
@@ -47,22 +47,12 @@ namespace Bede.SlotMachine.Engine
             return _currentWin;
         }
 
-        private void MarkAsStaked()
-        {
-            this._staked = true;
-        }
-
-        private void MarkAsDestaked()
-        {
-            this._staked = false;
-        }
-
         private bool IsSpinable()
         {
-            return _balance - _stake > 0;
+            return _stake > 0 && _balance > 0 && _balance - _stake > 0;
         }
 
-        private void AddToHistory(SpinResult spin)
+        private void AddToHistory(ISpinResult spin)
         {
             this._spinHistory.Add(spin);
         }
@@ -76,64 +66,72 @@ namespace Bede.SlotMachine.Engine
                 Symbols = new List<ISlotSymbol>(_symbolCount)
             };
 
-            for(int i = 0; i < _symbolCount; i++)
+            for (int i = 0; i < _symbolCount; i++)
             {
-                spinRowResult.Symbols.Add(selector.GetSymbol()); 
+                spinRowResult.Symbols.Add(selector.GetSymbol());
             }
 
             return spinRowResult;
         }
 
-        public SpinResult GetSpinResult()
-        {
-            SpinResult spin = null;
-
-            if (!IsSpinable())
-            {
-                return spin;
-            }
-
-            spin = new SpinResult()
-            {
-                Date = DateTime.Now,
-                Dimensions = new List<SpinRowResult>(_dimensionCount)
-            };
+        public IEnumerable<SpinRowResult> GenerateDimensions()
+        {          
+            var dimensions = new List<SpinRowResult>(_dimensionCount);
 
             for (int i = 0; i < _dimensionCount; i++)
             {
-                spin.Dimensions.Add(GenerateRow());
+                dimensions.Add(GenerateRow());
             }
-
-
-            AddToHistory(spin);
-            return spin;
+            
+            return dimensions;
         }
 
-        public IEnumerable<SpinRowResult> GetWinningDimensions()
+        private IEnumerable<SpinRowResult> GetWinningDimensions(IEnumerable<SpinRowResult> Dimensions)
         {
+            // Check each dimension for win and return winning ones if any
+            var result = Dimensions.Where(dimension =>
+            {                
+                bool isWin = dimension.Symbols.All(a => a.Equals(new AppleSymbol()));
 
-            var spin = GetSpinResult();
+                if(!isWin)
+                {
+                    isWin = dimension.Symbols.All(a => a.Equals(new BananaSymbol()));
+                }
+                else if(!isWin)
+                {
+                    isWin = dimension.Symbols.All(a => a.Equals(new PineappleSymbol()));
+                }
 
-            var result = spin.Dimensions.Where(dimension =>
-            {
-                var first = dimension.Symbols.First();
-
-                var query = from symbol in dimension.Symbols
-                            where symbol.Type == first.Type || symbol.Type == Enums.SymbolTypes.Wildcard
-                            select symbol;
-
-                return query.Count() == dimension.Symbols.Count();
+                return isWin;
             });
 
             return result;
         }
 
-        public void Spin()
+        public ISpinResult Spin()
         {
-            var winninDimensions = GetWinningDimensions().ToList();
+            if (!IsSpinable())
+            {
+                return null;
+            }
+
+            var dimmensions = GenerateDimensions();
+            var winninDimensions = GetWinningDimensions(dimmensions);
 
             _currentWin = Math.Round(winninDimensions.Sum(d => d.Symbols.Sum(s => s.Coefficient)) * _stake, 2, MidpointRounding.AwayFromZero);
             _balance = _balance - _stake + _currentWin;
+
+            var spin = new SpinResult()
+            {
+                Date = DateTime.Now,
+                Balance = _balance,
+                Stake = _stake,
+                Win = _currentWin,
+                Dimensions = dimmensions
+            };
+
+            AddToHistory(spin);
+            return spin;
         }
     }
 }

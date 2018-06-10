@@ -11,8 +11,9 @@ namespace Bede.SlotMachine
 
             var engine = new SlotEngine();
             engine.EnterDeposit(200);
-            engine.EnterStake(20);
-            engine.Spin();
+            engine.Stake = 20;
+            var res = engine.Spin();
+            Console.WriteLine(res.Balance);
         }
     }
 }

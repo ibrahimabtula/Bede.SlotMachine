@@ -14,7 +14,7 @@ namespace Bede.SlotMachineUI.WinForms
 
             slotEngine = new Bede.SlotMachine.Engine.SlotEngine();
             slotEngine.EnterDeposit(100);
-            slotEngine.EnterStake(10);
+            
 
             //tbBalance.DataBindings.Add(nameof(TextBox.Text), slotEngine, nameof(SlotEngine.Balance));
 

@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Bede.SlotMachine.Engine
 {
-    public class SpinResult
+    public class SpinResult : ISpinResult
     {
         public DateTime Date { get; set; }
-        public IList<SpinRowResult> Dimensions { get; set; }
+
+        public double Win { get; set; }
+
+        public double Stake { get; set; }
+
+        public double Balance { get; set; }
+
+        public IEnumerable<SpinRowResult> Dimensions { get; set; }
     }
 }

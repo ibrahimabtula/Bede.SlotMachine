@@ -5,9 +5,9 @@ VisualStudioVersion = 15.0.27703.2018
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bede.SlotMachine", "Bede.SlotMachine\Bede.SlotMachine.csproj", "{1DBBAC85-355A-4DAF-8CC9-86A227508C02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bede.SlotMachineUI.WinForms", "Bede.SlotMachineUI.WinForms\Bede.SlotMachineUI.WinForms.csproj", "{100B9301-23DE-4FC2-838E-20BDE19CF0C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bede.SlotMachine.Engine", "Bede.SlotMachine.Engine\Bede.SlotMachine.Engine.csproj", "{01584EF7-AA0B-4926-B232-7D0A3A505E56}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bede.SlotMachine.Engine", "Bede.SlotMachine.Engine\Bede.SlotMachine.Engine.csproj", "{01584EF7-AA0B-4926-B232-7D0A3A505E56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bede.SlotMachine.WebUI", "Bede.SlotMachine.WebUI\Bede.SlotMachine.WebUI.csproj", "{76E98F7E-72FD-40EE-858B-4D20FBDAC734}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +19,14 @@ Global
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DBBAC85-355A-4DAF-8CC9-86A227508C02}.Release|Any CPU.Build.0 = Release|Any CPU
-		{100B9301-23DE-4FC2-838E-20BDE19CF0C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{100B9301-23DE-4FC2-838E-20BDE19CF0C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{100B9301-23DE-4FC2-838E-20BDE19CF0C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{100B9301-23DE-4FC2-838E-20BDE19CF0C5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{01584EF7-AA0B-4926-B232-7D0A3A505E56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{01584EF7-AA0B-4926-B232-7D0A3A505E56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01584EF7-AA0B-4926-B232-7D0A3A505E56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01584EF7-AA0B-4926-B232-7D0A3A505E56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76E98F7E-72FD-40EE-858B-4D20FBDAC734}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76E98F7E-72FD-40EE-858B-4D20FBDAC734}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76E98F7E-72FD-40EE-858B-4D20FBDAC734}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76E98F7E-72FD-40EE-858B-4D20FBDAC734}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

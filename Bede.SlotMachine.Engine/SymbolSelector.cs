@@ -21,11 +21,9 @@ namespace Bede.SlotMachine.Engine
             };
         }
 
-
         public ISlotSymbol GetSymbol()
         {
-            Random r = new Random();
-            double diceRoll = r.NextDouble();
+            double diceRoll = ThreadSafeRandom.Next();
 
             double cumulative = 0.0;
             for (int i = 0; i < _symbols.Count; i++)
@@ -41,5 +39,18 @@ namespace Bede.SlotMachine.Engine
             return default(ISlotSymbol);
         }
 
+    }
+
+    class ThreadSafeRandom
+    {
+        private static Random random = new Random();
+
+        public static double Next()
+        {
+            lock (random)
+            {
+                return random.NextDouble();
+            }
+        }
     }
 }
