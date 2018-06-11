@@ -79,6 +79,10 @@ namespace Bede.SlotMachine.Engine
                 Symbols = new List<ISlotSymbol>(_symbolCount)
             };
 
+            //spinRowResult.Symbols.Add(new WildcardSymbol());
+            //spinRowResult.Symbols.Add(new PineappleSymbol());
+            //spinRowResult.Symbols.Add(new PineappleSymbol());
+
             for (int i = 0; i < _symbolCount; i++)
             {
                 spinRowResult.Symbols.Add(selector.GetSymbol());
@@ -110,7 +114,8 @@ namespace Bede.SlotMachine.Engine
                 {
                     isWin = dimension.Symbols.All(a => a.Equals(new BananaSymbol()));
                 }
-                else if(!isWin)
+
+                if (!isWin)
                 {
                     isWin = dimension.Symbols.All(a => a.Equals(new PineappleSymbol()));
                 }

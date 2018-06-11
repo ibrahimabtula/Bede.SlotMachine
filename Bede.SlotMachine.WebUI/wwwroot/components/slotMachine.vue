@@ -69,22 +69,6 @@ export default {
             // always executed
             self.spinning = false;
         })               
-
-        // var jqxhr = $.get( "/home/getLastSpin", function(data) {
-        //     if (data.OK) {                        
-        //         self.spinResult = data.Data;
-        //         self.balance = self.spinResult.Balance;
-        //         self.stake = self.spinResult.Stake;
-        //     }else{
-        //         self.showMessage(data.Message);                        
-        //     }
-        // })
-        // .fail(function(data) {
-        //     console.log(data);
-        // })
-        // .always(function() {
-        //     self.spinning = false;
-        // });
     },
     watch:{
         stake: function(newVal, oldVal){
@@ -146,6 +130,7 @@ export default {
                 }
             })
             .fail(function(data) {
+                self.spinResult = {};
                 console.log(data);
             })
             .always(function() {
