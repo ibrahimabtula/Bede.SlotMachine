@@ -14,7 +14,7 @@ namespace Bede.SlotMachine.Engine
 
         double GetCurrentWin();
 
-        ISpinResult Spin();
+        (ISpinResult spin, bool success, string message) Spin();
 
     }
 }

@@ -5,6 +5,8 @@ namespace Bede.SlotMachine.Engine
 {
     public class SpinRowResult
     {
+        public bool IsWin { get; set; }
+
         public IList<ISlotSymbol> Symbols { get; set; }
     }
 }

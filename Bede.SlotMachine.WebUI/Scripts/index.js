@@ -1,0 +1,1 @@
+﻿import SlotMachine from './wwwroot/components/slotMachine.vue';

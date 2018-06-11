@@ -47,9 +47,22 @@ namespace Bede.SlotMachine.Engine
             return _currentWin;
         }
 
-        private bool IsSpinable()
+        private (bool valid, string message) IsSpinable()
         {
-            return _stake > 0 && _balance > 0 && _balance - _stake > 0;
+            if(_balance == 0)
+            {
+                return (false, "Not enough balance, please deposit!");
+            }
+            else if(_stake == 0)
+            {
+                return (false, "Stake is 0, please set stake size!");
+            }
+            else if(_balance - _stake < 0)
+            {
+                return (false, "Not enough balance, please deposit!");
+            }
+
+            return (true, null);
         }
 
         private void AddToHistory(ISpinResult spin)
@@ -89,8 +102,8 @@ namespace Bede.SlotMachine.Engine
         private IEnumerable<SpinRowResult> GetWinningDimensions(IEnumerable<SpinRowResult> Dimensions)
         {
             // Check each dimension for win and return winning ones if any
-            var result = Dimensions.Where(dimension =>
-            {                
+            return Dimensions.Where(dimension =>
+            {
                 bool isWin = dimension.Symbols.All(a => a.Equals(new AppleSymbol()));
 
                 if(!isWin)
@@ -102,24 +115,25 @@ namespace Bede.SlotMachine.Engine
                     isWin = dimension.Symbols.All(a => a.Equals(new PineappleSymbol()));
                 }
 
+                dimension.IsWin = isWin;
+
                 return isWin;
             });
-
-            return result;
         }
 
-        public ISpinResult Spin()
+        public (ISpinResult spin, bool success, string message) Spin()
         {
-            if (!IsSpinable())
+            var spinable = IsSpinable();
+            if (!spinable.valid)
             {
-                return null;
+                return (null, spinable.valid, spinable.message);
             }
 
             var dimmensions = GenerateDimensions();
             var winninDimensions = GetWinningDimensions(dimmensions);
 
             _currentWin = Math.Round(winninDimensions.Sum(d => d.Symbols.Sum(s => s.Coefficient)) * _stake, 2, MidpointRounding.AwayFromZero);
-            _balance = _balance - _stake + _currentWin;
+            _balance = Math.Round(_balance - _stake + _currentWin, 2 , MidpointRounding.AwayFromZero);
 
             var spin = new SpinResult()
             {
@@ -131,7 +145,7 @@ namespace Bede.SlotMachine.Engine
             };
 
             AddToHistory(spin);
-            return spin;
+            return (spin, true, "Spinned");
         }
     }
 }

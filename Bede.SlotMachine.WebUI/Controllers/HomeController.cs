@@ -24,6 +24,33 @@ namespace Bede.SlotMachine.WebUI.Controllers
             return View();
         }
 
+        [HttpGet]
+        public JsonResult GetLastSpin()
+        {
+            var last = slotEngine.SpinHistory.LastOrDefault();
+
+            if(last != null)
+            {
+                return Json(new { OK = true, Message = "", Data = last }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new { OK = false, Message = "No previous plays, enter deposit and stake to start new game", Data = last }, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [HttpPost]
+        public JsonResult EnterStake(double? stake)
+        {
+            if (!stake.HasValue)
+            {
+                return Json(new { OK = false, Message = "Value is NULL!" }, JsonRequestBehavior.AllowGet);
+            }
+
+            slotEngine.Stake = stake.Value;
+
+            return Json(new { OK = true, Message = "Stake entered" }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult EnterDeposit(double? deposit)
         {
@@ -37,31 +64,12 @@ namespace Bede.SlotMachine.WebUI.Controllers
             return Json(new { OK = true, Message = "Deposit entered" }, JsonRequestBehavior.AllowGet);
         }
 
-        //[HttpGet]
-        //public JsonResult GetCurrentState()
-        //{
-
-        //    var lastHistoryItem = slotEngine.SpinHistory.Last();
-
-        //    if (lastHistoryItem == null)
-        //    {
-        //        return Json(new { OK = false, Message = "Not enough balance!", Data = lastHistoryItem }, JsonRequestBehavior.AllowGet);
-        //    }
-
-        //    return Json(new { OK = true, Message = "Spinned", Data = lastHistoryItem }, JsonRequestBehavior.AllowGet);
-        //}
-
         [HttpGet]
         public JsonResult Spin()
         {
-            var spinResult = slotEngine.Spin();
+            var result = slotEngine.Spin();
 
-            if(spinResult == null)
-            {
-                return Json(new { OK = false, Message = "Not enough balance!", Data = spinResult }, JsonRequestBehavior.AllowGet);
-            }
-
-            return Json(new { OK = true, Message = "Spinned", Data = spinResult }, JsonRequestBehavior.AllowGet);
+            return Json(new { OK = result.success, Message = result.message, Data = result.spin }, JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult Contact()
