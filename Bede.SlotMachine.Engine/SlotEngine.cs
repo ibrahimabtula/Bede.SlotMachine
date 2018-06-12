@@ -72,7 +72,7 @@ namespace Bede.SlotMachine.Engine
 
         private SpinRowResult GenerateRow()
         {
-            var selector = new SymbolSelector();
+            var symbolGenerator = new SymbolGenerator();
 
             var spinRowResult = new SpinRowResult()
             {
@@ -85,7 +85,7 @@ namespace Bede.SlotMachine.Engine
 
             for (int i = 0; i < _symbolCount; i++)
             {
-                spinRowResult.Symbols.Add(selector.GetSymbol());
+                spinRowResult.Symbols.Add(symbolGenerator.Next());
             }
 
             return spinRowResult;

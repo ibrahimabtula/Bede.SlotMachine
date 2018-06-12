@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Bede.SlotMachine.Engine
 {
-    internal class SymbolSelector
+    internal class SymbolGenerator
     {
         private IList<ISlotSymbol> _symbols;
 
-        public SymbolSelector()
+        public SymbolGenerator()
         {
             _symbols = new List<ISlotSymbol>
             {
@@ -21,7 +21,11 @@ namespace Bede.SlotMachine.Engine
             };
         }
 
-        public ISlotSymbol GetSymbol()
+        /// <summary>
+        /// Generates a random symbol according to their probability
+        /// </summary>
+        /// <returns></returns>
+        public ISlotSymbol Next()
         {
             double diceRoll = ThreadSafeRandom.Next();
 
