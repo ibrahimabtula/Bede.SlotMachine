@@ -109,52 +109,25 @@ var _axios = __webpack_require__(23);
 
 var _axios2 = _interopRequireDefault(_axios);
 
+var _depositModal = __webpack_require__(44);
+
+var _depositModal2 = _interopRequireDefault(_depositModal);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
 exports.default = {
+    components: {
+        'deposit-modal': _depositModal2.default
+    },
     data: function data() {
         return {
             deposit: 0,
             stake: 0,
             balance: 0,
-            spinning: false,
-            spinResult: {}
+            win: 0,
+            // Just to not show empty table init with anything
+            dimensions: [{ Symbols: [{ Type: 1 }, { Type: 2 }, { Type: 2 }] }, { Symbols: [{ Type: 1 }, { Type: 1 }, { Type: 1 }] }, { Symbols: [{ Type: 1 }, { Type: 1 }, { Type: 1 }] }],
+            spinning: false
         };
     },
     created: function created() {
@@ -164,17 +137,26 @@ exports.default = {
         _axios2.default.get("/home/getLastSpin").then(function (response) {
             var data = response.data;
             if (data.OK) {
-                self.spinResult = data.Data;
-                self.balance = self.spinResult.Balance;
-                self.stake = self.spinResult.Stake;
-            } else {
-                self.showMessage(data.Message);
+                self.dimensions = data.Data.Dimensions;
+                self.balance = data.Data.Balance;
+                self.stake = data.Data.Stake;
+                self.win = data.Data.Win;
+            }
+
+            return _axios2.default.get("/home/getBalance");
+        }).then(function (response) {
+            var data = response.data;
+            if (data.OK) {
+                if (data.Data == 0) {
+                    self.enterDeposit();
+                } else {
+                    self.balance = data.Data;
+                }
+                // always executed
+                self.spinning = false;
             }
         }).catch(function (e) {
-            console.log(data);
-        }).then(function () {
-            // always executed
-            self.spinning = false;
+            console.log(e);
         });
     },
     watch: {
@@ -194,46 +176,57 @@ exports.default = {
                 return 'wyldecard';
             }
         },
+        onDeposit: function onDeposit(amount) {
+            this.balance += amount;
+            this.showMessage(amount + ' deposited!', 'warning');
+        },
         enterDeposit: function enterDeposit() {
+            this.$refs.depositModal.show();
+        },
+        startAgain: function startAgain() {
             var self = this;
-            var jqxhr = $.post("/home/enterDeposit", { deposit: self.deposit }, function () {
-                self.balance += self.deposit;
-                self.showMessage(self.deposit + ' deposited!', 'info');
-            }).fail(function (data) {
-                console.log(data);
-            }).always(function () {
-                self.deposit = 0;
+            _axios2.default.post("/home/startAgain").then(function (response) {
+                var data = response.data;
+                if (data.OK) {
+                    self.showMessage(data.Message, 'info');
+                    self.balance = 0;
+                    self.stake = 0;
+                    self.win = 0;
+                    self.enterDeposit();
+                }
+            }).catch(function (e) {
+                console.log(e);
             });
         },
-        changeStake: function changeStake() {
-            this.enterStake(20);
-            self.stake = 20;
-        },
         enterStake: function enterStake(stake) {
-            var self = this;
-            var jqxhr = $.post("/home/enterStake", { stake: stake }, function () {}).fail(function (data) {
-                console.log(data);
-            }).always(function () {
-                //self.stake = 0;
+            _axios2.default.post("/home/enterStake", { stake: stake }).then(function (response) {}).catch(function (e) {
+                console.log(e);
             });
         },
         spin: function spin() {
-            this.spinning = true;
+            if (this.balance - this.stake >= 0) {
+                this.spinning = true;
+            }
+
             var self = this;
 
-            var jqxhr = $.get("/home/spin", function (data) {
+            _axios2.default.get("/home/spin").then(function (response) {
+                var data = response.data;
                 if (data.OK) {
-                    self.spinResult = data.Data;
-                    self.balance = self.spinResult.Balance;
-                    self.stake = self.spinResult.Stake;
+                    self.dimensions = data.Data.Dimensions;
+                    self.balance = data.Data.Balance;
+                    self.stake = data.Data.Stake;
+                    self.win = data.Data.Win;
                 } else {
                     self.showMessage(data.Message);
                 }
-            }).fail(function (data) {
-                self.spinResult = {};
+            }).catch(function (e) {
                 console.log(data);
-            }).always(function () {
-                self.spinning = false;
+            }).then(function () {
+                // always executed
+                setTimeout(function () {
+                    self.spinning = false;
+                }, 500);
             });
         },
         showMessage: function showMessage(msg) {
@@ -247,7 +240,46 @@ exports.default = {
             }).show();
         }
     }
-};
+}; //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 /***/ }),
 /* 2 */
@@ -260,9 +292,15 @@ var _slotMachine = __webpack_require__(3);
 
 var _slotMachine2 = _interopRequireDefault(_slotMachine);
 
+var _vueJsModal = __webpack_require__(42);
+
+var _vueJsModal2 = _interopRequireDefault(_vueJsModal);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Vue = __webpack_require__(12);
+
+Vue.use(_vueJsModal2.default, { dialog: true });
 
 new Vue({
     el: '#mainApp',
@@ -282,10 +320,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_slotMachine_vue__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_slotMachine_vue__[key]; }) }(__WEBPACK_IMPORT_KEY__));
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_50715218_hasScoped_false_buble_transforms_node_modules_vue_loader_lib_selector_type_template_index_0_slotMachine_vue__ = __webpack_require__(11);
 var disposed = false
-function injectStyle (ssrContext) {
-  if (disposed) return
-  __webpack_require__(4)
-}
 var normalizeComponent = __webpack_require__(9)
 /* script */
 
@@ -295,7 +329,7 @@ var normalizeComponent = __webpack_require__(9)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
-var __vue_styles__ = injectStyle
+var __vue_styles__ = null
 /* scopeId */
 var __vue_scopeId__ = null
 /* moduleIdentifier (server only) */
@@ -330,46 +364,8 @@ if (false) {(function () {
 
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(5);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(7)("28e2ffd6", content, false, {});
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../node_modules/css-loader/index.js?sourceMap!../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-50715218\",\"scoped\":false,\"hasInlineConfig\":false}!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./slotMachine.vue", function() {
-     var newContent = require("!!../../node_modules/css-loader/index.js?sourceMap!../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-50715218\",\"scoped\":false,\"hasInlineConfig\":false}!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./slotMachine.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(6)(true);
-// imports
-
-
-// module
-exports.push([module.i, "\n.gray{\n    color: gray;\n}\n.win{\n    border: 2px solid red;\n}\n.banana {\n    background-size: 32px 32px;\n    background-repeat: no-repeat;\n    background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTkuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDUxMi4wMDEgNTEyLjAwMSIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTEyLjAwMSA1MTIuMDAxOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgd2lkdGg9IjUxMnB4IiBoZWlnaHQ9IjUxMnB4Ij4KPHBhdGggc3R5bGU9ImZpbGw6I0E2RUQ5QTsiIGQ9Ik0zNzQuNjU0LDEwMy4zOTZsLTIyLjY5Mi02MC4zN2MtMS41NTgtNC4xNDUsMC44MDktOC43MjgsNS4wOTEtOS44NTdsNTEuMTE1LTEzLjQ4NiAgYzMuOTkxLTEuMDUzLDguMDgsMS4zMjgsOS4xMzQsNS4zMTlsMTYuOTgyLDY0LjI4NEwzNzQuNjU0LDEwMy4zOTZ6Ii8+CjxwYXRoIHN0eWxlPSJmaWxsOiNGRkM2NkM7IiBkPSJNNDM0LjI4NSw4OS4yODZsLTU5LjYzMiwxNC4xMWwtMTMuNDY0LDY0Ljk4OGMtOS41MjgsNDUuOTk1LTMxLjE4Miw4OC42MDUtNjIuNzE3LDEyMy40MTdsMCwwICBjLTM4LjUyMiw0Mi41MjUtODkuODc1LDcxLjMxLTE0Ni4yNTQsODEuOTc5bC00My41NDEsOC4yMzljLTE4LjA4MiwzLjQyMS0zNC45NjQsMTEuNDg2LTQ4Ljk5LDIzLjM5OWwwLDBsLTM4LjI5Nyw3LjI0N0wxMCw0NTEuOTggIGwwLDBjMzQuODk1LDIxLjMzNCw3NC4yMjcsMzQuMzYsMTE0Ljk1NywzOC4wN2wxMS4zMDQsMS4wM2M4NC4yNTcsNy42NzYsMTY4LjU0Ny0xNC4zNDEsMjM4LjI4Ni02Mi4yNDJsMCwwICBjNDkuOTEzLTM0LjI4Myw4OC43MzEtODEuNDk4LDExMi40OC0xMzYuNTQ3bDIuMTgzLTUuMDZjMjQuMzAzLTU2LjMzNiwxMy42MDUtMTIxLjY2My0yNy4zOTktMTY3LjMwNEw0MzQuMjg1LDg5LjI4NnoiLz4KPHBhdGggZD0iTTE1Mi4yMDksMzgzLjc4M2MwLjYyMywwLDEuMjU3LTAuMDU5LDEuODkyLTAuMTgxbDAuODI3LTAuMTU4YzUuNDI1LTEuMDM4LDguOTgtNi4yNzgsNy45NDEtMTEuNzA0ICBjLTEuMDM5LTUuNDI1LTYuMjc0LTguOTg3LTExLjcwNC03Ljk0MWwtMC44MjcsMC4xNThjLTUuNDI1LDEuMDM4LTguOTgsNi4yNzgtNy45NDEsMTEuNzA0ICBDMTQzLjMxNCwzODAuNDUxLDE0Ny41MDYsMzgzLjc4MywxNTIuMjA5LDM4My43ODN6Ii8+CjxwYXRoIGQ9Ik00NjkuMjUzLDExMy4yNDNsLTI1LjkxNS0yOC44NDVsLTE2LjM2NS02MS45NWMtMi40NjEtOS4zMTQtMTIuMDQxLTE0Ljg5NC0yMS4zNTUtMTIuNDM1bC01MS4xMTUsMTMuNDg1ICBjLTQuNzcyLDEuMjU5LTguODA2LDQuNDk2LTExLjA3LDguODc5Yy0yLjI2NSw0LjM4NS0yLjU2Nyw5LjU0OC0wLjgzMSwxNC4xNjhsMjEuNjcyLDU3LjY1OGwtMTIuODc3LDYyLjE1MiAgYy05LjE1OSw0NC4yMTItMzAuMDIzLDg1LjI2OC02MC4zMzYsMTE4LjczYy0yNy40MSwzMC4yNTktNjIuMTU2LDUzLjY5MS0xMDAuNDgxLDY3Ljc2Yy01LjE4NiwxLjkwMy03Ljg0Niw3LjY1LTUuOTQyLDEyLjgzNiAgYzEuOTA0LDUuMTg2LDcuNjUxLDcuODQ0LDEyLjgzNiw1Ljk0MmM0MS4zNTEtMTUuMTgxLDc4LjgzOC00MC40NjEsMTA4LjQxMS03My4xMDhjMzIuNzA2LTM2LjEwNCw1NS4yMTYtODAuNCw2NS4wOTgtMTI4LjEwMSAgbDEyLjE3Mi01OC43NTFsNDcuNjU2LTExLjI3N2wyMy41NjIsMjYuMjI2YzM4LjI2Niw0Mi41OTIsNDguMzM3LDEwNC4wODQsMjUuNjU2LDE1Ni42NThsLTIuMTgzLDUuMDYxICBjLTIzLjAzMiw1My4zODgtNjAuNzEsOTkuMTIzLTEwOC45NiwxMzIuMjY0Yy02Ny42NjksNDYuNDgxLTE0OS45NTUsNjcuOTc0LTIzMS43MTYsNjAuNTI3bC0xMS4zMDQtMS4wMjkgIGMtMTQuNTEyLTEuMzIyLTI4LjkxOS0zLjkyOS00My4wMTctNy43MDdjMy42MTEtOS40MzYsNS40OTYtMTkuNDk5LDUuNDk2LTI5LjY0OXYtMy4wNjNjMC01LjUyMy00LjQ3OS0xMC4wMDEtMTAuMDAxLTEwLjAwMSAgcy0xMC4wMDEsNC40NzktMTAuMDAxLDEwLjAwMXYzLjA2M2MwLDguMTQtMS41OTEsMTYuMjA4LTQuNjQ1LDIzLjcxNmMtMTQuNTE2LTUuMTIyLTI4LjU4MS0xMS41MTYtNDEuOTMyLTE5LjEzNWw3LjUyMi0yNS45NjUgIGwzMi4yNjEtNi4xMDVjMS43MDMtMC4zMjIsMy4yOTQtMS4wODEsNC42MTUtMi4yMDRjMTIuNjgyLTEwLjc3MywyOC4wMjYtMTguMTAxLDQ0LjM3NC0yMS4xOTQgIGM1LjQyOC0xLjAyNiw4Ljk5NC02LjI1OSw3Ljk2OC0xMS42ODdjLTEuMDI3LTUuNDI3LTYuMjU4LTguOTk1LTExLjY4OC03Ljk2N2MtMTguODY0LDMuNTY4LTM2LjYyMSwxMS44MDctNTEuNTI2LDIzLjg3OCAgbC0zNS43NjEsNi43NjhjLTMuNzA0LDAuNy02LjY5OCwzLjQyMy03Ljc0Nyw3LjA0NEwwLjM5Niw0NDkuMTk4Yy0xLjI1NCw0LjMzLDAuNTQzLDguOTY0LDQuMzkxLDExLjMxNiAgYzE4Ljg0MSwxMS41MTksMzkuMTE4LDIwLjc0NSw2MC4xOSwyNy40NzdjMC41MjYsMC4yMiwxLjA2MywwLjM4NCwxLjYwNSwwLjUwOWMxOC42OTQsNS44NDksMzcuOTk4LDkuNzM3LDU3LjQ3MiwxMS41MTIgIGwxMS4zMDQsMS4wMjljMTEuMjIxLDEuMDIxLDIyLjQzNywxLjUyOCwzMy42NDIsMS41MjhjNzUuMDY0LTAuMDAzLDE0OC45OTUtMjIuNzUxLDIxMS4yMTYtNjUuNDg3ICBjNTEuMzYxLTM1LjI3OCw5MS40NzItODMuOTc2LDExNS45OTktMTQwLjgzbDIuMTgzLTUuMDYxQzUyNC4xNTksMjMxLjQ3NCw1MTIuNzIxLDE2MS42MjUsNDY5LjI1MywxMTMuMjQzeiBNNDA4LjI3NywyOS45OTggIGwxMy43MTYsNTEuOTE4bC00MS4wNzUsOS43MTlsLTE4LjYxLTQ5LjUxTDQwOC4yNzcsMjkuOTk4eiIvPgo8cGF0aCBkPSJNNDQyLjI5MywyODQuMjY4YzMuODU4LDAsNy41MzQtMi4yNDYsOS4xNzQtNi4wMWwwLjQ4Ni0xLjEyMmMyLjE3Ny01LjA3Ny0wLjE3My0xMC45NTctNS4yNDktMTMuMTM1ICBjLTUuMDc5LTIuMTc1LTEwLjk1NywwLjE3My0xMy4xMzUsNS4yNDlsLTAuNDQxLDEuMDE5Yy0yLjIwNiw1LjA2NCwwLjExMSwxMC45NTgsNS4xNzUsMTMuMTY0ICBDNDM5LjYwMywyODQsNDQwLjk1OSwyODQuMjY4LDQ0Mi4yOTMsMjg0LjI2OHoiLz4KPHBhdGggZD0iTTM0Ny4yNjMsMzk5LjEwMmMxLjk1MSwwLDMuOTI0LTAuNTcsNS42NTQtMS43NThjMjkuMTEyLTE5Ljk5Nyw1My44Ny00NC44NDMsNzMuNTg2LTczLjg1ICBjMy4xMDQtNC41NjgsMS45MTktMTAuNzg5LTIuNjQ5LTEzLjg5NGMtNC41NjktMy4xMDUtMTAuNzg5LTEuOTE5LTEzLjg5NCwyLjY0OWMtMTguMzEyLDI2Ljk0MS00MS4zMTQsNTAuMDIzLTY4LjM2OCw2OC42MDUgIGMtNC41NTMsMy4xMjctNS43MDksOS4zNTQtMi41ODEsMTMuOTA3QzM0MC45NDksMzk3LjU4NCwzNDQuMDc5LDM5OS4xMDIsMzQ3LjI2MywzOTkuMTAyeiIvPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);\n    width: 32px;\n    height: 32px;\n}\n.apple {\n    background-size: 32px 32px;\n    background-repeat: no-repeat;\n    background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTguMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDU2LjY3MyA1Ni42NzMiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDU2LjY3MyA1Ni42NzM7IiB4bWw6c3BhY2U9InByZXNlcnZlIiB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiPgo8Zz4KCTxwYXRoIHN0eWxlPSJmaWxsOiNEMTM4MzQ7IiBkPSJNMzEuNDgzLDE2LjIxM2MtMi4wNjUsMC41MTEtNC4yMjcsMC41MTEtNi4yOTIsMGMtMTAuNzU2LTIuNjYtMTkuNzYyLTEuNjQtMTkuNjU4LDE4LjY0MyAgIGMwLjA1MywxMC4zOSw5Ljc4MywyMy44NjIsMjAuMDA5LDIxLjU1N2MxLjgzNC0wLjQxMywzLjc1NS0wLjQxMyw1LjU4OSwwYzEwLjIyNiwyLjMwNSwxOS45NTYtMTEuMTY3LDIwLjAwOS0yMS41NTcgICBDNTEuMjQ0LDE0LjU3NCw0Mi4yMzksMTMuNTUzLDMxLjQ4MywxNi4yMTN6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojRjc1QjU3OyIgZD0iTTEwLjUzMywyOS42NzRjLTAuNTUzLDAtMS0wLjQ0OC0xLTFjMC01LjUxNCw0LjAzNy0xMCw5LTEwYzAuNTUzLDAsMSwwLjQ0OCwxLDFzLTAuNDQ3LDEtMSwxICAgYy0zLjg1OSwwLTcsMy41ODktNyw4QzExLjUzMywyOS4yMjYsMTEuMDg1LDI5LjY3NCwxMC41MzMsMjkuNjc0eiIvPgoJPHBhdGggc3R5bGU9ImZpbGw6IzRDMzEyQzsiIGQ9Ik0yOC4yNjUsMTkuOTk5Yy0wLjUzNywwLTAuOTgxLTAuNDI3LTAuOTk4LTAuOTY4Yy0wLjEzNS00LjIzMi0xLjc2MS05LjU0NS01LjkyMi0xMS43NjQgICBjLTAuNDg3LTAuMjYtMC42NzItMC44NjUtMC40MTItMS4zNTNjMC4yNjEtMC40ODcsMC44NjQtMC42NzIsMS4zNTQtMC40MTJjNC45MTQsMi42Miw2LjgyNyw4LjY3Myw2Ljk3OSwxMy40NjUgICBjMC4wMTgsMC41NTItMC40MTUsMS4wMTQtMC45NjgsMS4wMzFDMjguMjg2LDE5Ljk5OSwyOC4yNzYsMTkuOTk5LDI4LjI2NSwxOS45OTl6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojOTk0NTMwOyIgZD0iTTI4LjE3NiwyMy41OTJjLTEuNjgsMC0zLjI2MS0wLjY1NS00LjQ1LTEuODQ1Yy0wLjM5MS0wLjM5LTAuMzkxLTEuMDIzLDAtMS40MTQgICBzMS4wMjMtMC4zOTEsMS40MTQsMGMwLjgxMiwwLjgxMiwxLjg5MSwxLjI1OSwzLjAzNiwxLjI1OXMyLjIyNC0wLjQ0NywzLjAzNS0xLjI1OWMwLjM5MS0wLjM5MSwxLjAyMy0wLjM5MSwxLjQxNCwwICAgYzAuMzkxLDAuMzksMC4zOTEsMS4wMjMsMCwxLjQxNEMzMS40MzYsMjIuOTM3LDI5Ljg1NiwyMy41OTIsMjguMTc2LDIzLjU5MnoiLz4KCTxwYXRoIHN0eWxlPSJmaWxsOiM2NTlDMzU7IiBkPSJNMjcuMzA1LDEzLjA0bDAuNjA5LTQuMDg2YzAuNjQzLTQuMzE1LDQuMDMxLTcuNzAzLDguMzQ2LTguMzQ2TDQwLjM0NSwwbC0wLjYwOSw0LjA4NiAgIGMtMC42NDMsNC4zMTUtNC4wMzEsNy43MDMtOC4zNDYsOC4zNDZMMjcuMzA1LDEzLjA0eiIvPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+Cjwvc3ZnPgo=);\n    width: 32px;\n    height: 32px;\n}\n.pineapple {\n    background-size: 32px 32px;\n    background-repeat: no-repeat;\n    background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTguMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDU3LjA2IDU3LjA2IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1Ny4wNiA1Ny4wNjsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI1MTJweCIgaGVpZ2h0PSI1MTJweCI+CjxnPgoJPHBhdGggc3R5bGU9ImZpbGw6I0Q2QTU1MDsiIGQ9Ik0yOC43NTgsMTkuMDZjMTYuMDU4LDAsMTUuOTQ0LDguNTA3LDE1Ljk0NCwxOXMtNy4xMzksMTktMTUuOTQ0LDE5aC0wLjQ1NiAgIGMtOC44MDYsMC0xNS45NDQtOC41MDctMTUuOTQ0LTE5cy0wLjExNC0xOSwxNS45NDQtMTkiLz4KCTxnPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiM4OEMwNTc7IiBkPSJNMzIuNTEsMTMuMzg5YzAuNTE1LTAuNjQ0LDEuMDk1LTEuMjQ2LDEuNzI4LTEuNzdjMC43OTEtNC41Niw2LjIzNC04LjI3OCwxMC4xMTktOS4yOCAgICBjMCwwLTMuMzE4LTIuNzYtNy40MzMtMi4yODRjLTQuMjY0LDAuNDkzLTYuNjg4LDIuNTg0LTguMDU1LDUuMDU2QzMxLjc1LDcuMzYxLDMyLjQyOSwxMC45MDQsMzIuNTEsMTMuMzg5eiIvPgoJPC9nPgoJPHBhdGggc3R5bGU9ImZpbGw6IzY1OUMzNTsiIGQ9Ik0yMy4yNTUsMTkuNDExYzEuNDc2LTAuMjI4LDMuMTQ1LTAuMzUxLDUuMDQ4LTAuMzUxaDAuMDU2YzAsMCwwLjE2Ny01LjA0Mi01LTYgICBjLTUuMTY3LTAuOTU4LTYsMi02LDJDMjEuODI1LDE2LjEzMSwyMi45NjMsMTguMzIxLDIzLjI1NSwxOS40MTF6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojNjU5QzM1OyIgZD0iTTM0LjYxMiwxOS41NTNjMC44MTktMS41NTIsNC42OC01LjI3OSw5Ljc0Ni02LjQ5M2MwLDAtMS44MzMtMy45NTgtNy0zICAgYy01LjE2NywwLjk1OC03Ljk5OSw5LTcuOTk5LDlzMC4wMjgsMC4wMDUsMC4wNjksMC4wMTFDMzEuMzk5LDE5LjEwMiwzMy4xMTcsMTkuMjY3LDM0LjYxMiwxOS41NTN6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojQTRFODY5OyIgZD0iTTI1Ljk4OCwxNC4xNTZjMi4yNiwxLjY1MiwyLjM2Nyw0LjM5OSwyLjM3LDQuODM4YzAuMzM1LDAuMDE2LDAuNjc5LDAuMDE0LDEuMDI1LDAgICBjMC4xNDUtMC4zOTUsMS4wMjEtMi42ODIsMi41NjUtNC44NTljMC4wNTktMC4xMTUsMC4xMTktMC4yMDQsMC4xODEtMC4yNDJjMC4wNzQtMC4xMDEsMC4xNTItMC4yMDEsMC4yMjgtMC4zMDEgICBjMC4wNTItMC4wNjcsMC4xLTAuMTM2LDAuMTU0LTAuMjAzYy0wLjExOS0zLjYyNi0xLjUwNi05LjUwNy05LjE1My0xMC4zMjljLTMuODc1LTAuNDE3LTcsMi03LDIgICBDMjAuMzA5LDYuMDA3LDI1Ljk4Myw5LjcyNywyNS45ODgsMTQuMTU2TDI1Ljk4OCwxNC4xNTZ6Ii8+Cgk8Zz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyMS4zNTgsNDQuNjQ2IDE3LjY1MSw0OC4zNTMgMTkuMDY1LDQ5Ljc2NyAyMS4zNTgsNDcuNDc0IDIzLjY1MSw0OS43NjcgMjUuMDY1LDQ4LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyNC42NTEsNTMuMzUzIDI2LjA2NSw1NC43NjcgMjguMzU4LDUyLjQ3NCAzMC42NTEsNTQuNzY3IDMyLjA2NSw1My4zNTMgMjguMzU4LDQ5LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzMS42NTEsNDguMzUzIDMzLjA2NSw0OS43NjcgMzUuMzU4LDQ3LjQ3NCAzNy42NTEsNDkuNzY3IDM5LjA2NSw0OC4zNTMgMzUuMzU4LDQ0LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxOS4wNjUsNDEuNzY3IDIxLjM1OCwzOS40NzQgMjMuNjUxLDQxLjc2NyAyNS4wNjUsNDAuMzUzIDIxLjM1OCwzNi42NDYgMTcuNjUxLDQwLjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyOC4zNTgsNDMuNDc0IDMwLjY1MSw0NS43NjcgMzIuMDY1LDQ0LjM1MyAyOC4zNTgsNDAuNjQ2IDI0LjY1MSw0NC4zNTMgMjYuMDY1LDQ1Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxNC40OTgsNDAuNjQ2IDEyLjc5MSw0Mi4zNTMgMTQuMjA1LDQzLjc2NyAxNC40OTgsNDMuNDc0IDE2Ljc5MSw0NS43NjcgMTguMjA1LDQ0LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMzkuNDc0IDM3LjY1MSw0MS43NjcgMzkuMDY1LDQwLjM1MyAzNS4zNTgsMzYuNjQ2IDMxLjY1MSw0MC4zNTMgMzMuMDY1LDQxLjc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxNy42NTEsMzIuMzUzIDE5LjA2NSwzMy43NjcgMjEuMzU4LDMxLjQ3NCAyMy42NTEsMzMuNzY3IDI1LjA2NSwzMi4zNTMgMjEuMzU4LDI4LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyOC4zNTgsMzUuNDc0IDMwLjY1MSwzNy43NjcgMzIuMDY1LDM2LjM1MyAyOC4zNTgsMzIuNjQ2IDI0LjY1MSwzNi4zNTMgMjYuMDY1LDM3Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMjguNjQ2IDMxLjY1MSwzMi4zNTMgMzMuMDY1LDMzLjc2NyAzNS4zNTgsMzEuNDc0IDM3LjY1MSwzMy43NjcgMzkuMDY1LDMyLjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyMS4zNTgsMjMuNDc0IDIzLjY1MSwyNS43NjcgMjUuMDY1LDI0LjM1MyAyMS4zNTgsMjAuNjQ2IDE3LjY1MSwyNC4zNTMgMTkuMDY1LDI1Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyNi4wNjUsMjkuNzY3IDI4LjM1OCwyNy40NzQgMzAuNjUxLDI5Ljc2NyAzMi4wNjUsMjguMzUzIDI4LjM1OCwyNC42NDYgMjQuNjUxLDI4LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMjMuNDc0IDM3LjY1MSwyNS43NjcgMzkuMDY1LDI0LjM1MyAzNS4zNTgsMjAuNjQ2IDMxLjY1MSwyNC4zNTMgMzMuMDY1LDI1Ljc2NyAgICAgICAiLz4KCQk8cGF0aCBzdHlsZT0iZmlsbDojRjRDNDRFOyIgZD0iTTQzLjIxMiwyNS41MzhsLTAuNjk5LTEuMDQ4bC0zLjg2MiwzLjg2M2wxLjQxNCwxLjQxNGwyLjEzOC0yLjEzN2wxLjMyMywxLjk4NWwwLjczMi0wLjQ4OCAgICBDNDQuMDM4LDI3LjgzMyw0My43MDUsMjYuNjMxLDQzLjIxMiwyNS41Mzh6Ii8+CgkJPHBhdGggc3R5bGU9ImZpbGw6I0Y0QzQ0RTsiIGQ9Ik00Mi4xNiw0MC44NDNsLTMuNTEsMy41MWwxLjQxNCwxLjQxNGwyLjQ5LTIuNDlsMS4zNTUsMC42NzhjMC4xOC0wLjY1NiwwLjMzNi0xLjMyMywwLjQ1Ni0yLjAwOCAgICBMNDIuMTYsNDAuODQzeiIvPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiNGNEM0NEU7IiBkPSJNMTQuMjMsMjQuNzc0Yy0wLjM4MywwLjY5My0wLjY4OCwxLjQzOC0wLjkzLDIuMjI4bDAuNzY1LDAuNzY1bDAuMjkzLTAuMjkzbDIuMjkzLDIuMjkzICAgIGwxLjQxNC0xLjQxNGwtMy43MDctMy43MDdMMTQuMjMsMjQuNzc0eiIvPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiNGNEM0NEU7IiBkPSJNNDQuNjg5LDM0Ljk3N2wtMi4zMzEtMi4zMzFsLTMuNzA3LDMuNzA3bDEuNDE0LDEuNDE0bDIuMjkzLTIuMjkzbDEuMjkzLDEuMjkzbDEuMDQ2LTEuMDQ2ICAgIEM0NC42OTUsMzUuNDcyLDQ0LjY5MiwzNS4yMjMsNDQuNjg5LDM0Ljk3N3oiLz4KCQk8cGF0aCBzdHlsZT0iZmlsbDojRjRDNDRFOyIgZD0iTTEyLjM3OCwzNC42MjZjLTAuMDA4LDAuNDc0LTAuMDE0LDAuOTUyLTAuMDE3LDEuNDM3bDAuNzA0LDAuNzA0bDEuMjkzLTEuMjkzbDIuMjkzLDIuMjkzICAgIGwxLjQxNC0xLjQxNGwtMy43MDctMy43MDdMMTIuMzc4LDM0LjYyNnoiLz4KCTwvZz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);\n    width: 32px;\n    height: 32px;\n}\n.wyldecard {\n    background-size: 32px 32px;\n    background-repeat: no-repeat;\n    background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTkuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDQ3Ljk0IDQ3Ljk0IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA0Ny45NCA0Ny45NDsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI1MTJweCIgaGVpZ2h0PSI1MTJweCI+CjxwYXRoIHN0eWxlPSJmaWxsOiNFRDhBMTk7IiBkPSJNMjYuMjg1LDIuNDg2bDUuNDA3LDEwLjk1NmMwLjM3NiwwLjc2MiwxLjEwMywxLjI5LDEuOTQ0LDEuNDEybDEyLjA5MSwxLjc1NyAgYzIuMTE4LDAuMzA4LDIuOTYzLDIuOTEsMS40MzEsNC40MDNsLTguNzQ5LDguNTI4Yy0wLjYwOCwwLjU5My0wLjg4NiwxLjQ0OC0wLjc0MiwyLjI4NWwyLjA2NSwxMi4wNDIgIGMwLjM2MiwyLjEwOS0xLjg1MiwzLjcxNy0zLjc0NiwyLjcyMmwtMTAuODE0LTUuNjg1Yy0wLjc1Mi0wLjM5NS0xLjY1MS0wLjM5NS0yLjQwMywwbC0xMC44MTQsNS42ODUgIGMtMS44OTQsMC45OTYtNC4xMDgtMC42MTMtMy43NDYtMi43MjJsMi4wNjUtMTIuMDQyYzAuMTQ0LTAuODM3LTAuMTM0LTEuNjkyLTAuNzQyLTIuMjg1bC04Ljc0OS04LjUyOCAgYy0xLjUzMi0xLjQ5NC0wLjY4Ny00LjA5NiwxLjQzMS00LjQwM2wxMi4wOTEtMS43NTdjMC44NDEtMC4xMjIsMS41NjgtMC42NSwxLjk0NC0xLjQxMmw1LjQwNy0xMC45NTYgIEMyMi42MDIsMC41NjcsMjUuMzM4LDAuNTY3LDI2LjI4NSwyLjQ4NnoiLz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPC9zdmc+Cg==);\n    width: 32px;\n    height: 32px;\n}\n.margin-top_25px{\n    margin-top: 25px;\n}\n.inline-block{\n    display: inline-block;\n}\n", "", {"version":3,"sources":["C:/Users/Ibra/Documents/Projects/Bede.SlotMachine/Bede.SlotMachine.WebUI/wwwroot/components/wwwroot/components/slotMachine.vue"],"names":[],"mappings":";AAyJA;IACA,YAAA;CACA;AACA;IACA,sBAAA;CACA;AACA;IACA,2BAAA;IACA,6BAAA;IACA,uyJAAA;IACA,YAAA;IACA,aAAA;CACA;AAEA;IACA,2BAAA;IACA,6BAAA;IACA,2iFAAA;IACA,YAAA;IACA,aAAA;CACA;AAEA;IACA,2BAAA;IACA,6BAAA;IACA,2xLAAA;IACA,YAAA;IACA,aAAA;CACA;AAEA;IACA,2BAAA;IACA,6BAAA;IACA,29CAAA;IACA,YAAA;IACA,aAAA;CACA;AAEA;IACA,iBAAA;CACA;AACA;IACA,sBAAA;CACA","file":"slotMachine.vue","sourcesContent":["<template> \r\n    <div>\r\n        <h3 class=\"gray\">Enter deposit and set stake size</h3>\r\n\r\n        <div class=\"form-group margin-top_25px\">\r\n            <label for=\"deposit\">Deposit:</label>\r\n            <input type=\"number\" class=\"form-control inline-block\" v-model.number=\"deposit\" id=\"deposit\">\r\n            <button v-on:click=\"enterDeposit\" class=\"btn btn-primary inline-block\">Enter</button>\r\n        </div>\r\n        <table class=\"table\" style=\"margin-top:45px\">\r\n            <thead>\r\n            </thead>\r\n            <tbody>\r\n                <tr v-for=\"dimension in spinResult.Dimensions\" :class=\"{'active win' : dimension.IsWin}\">\r\n                    <td v-for=\"symbol in dimension.Symbols\">\r\n                        <div :class=\"getSymbolClass(symbol.Type)\"></div>\r\n                    </td>\r\n                </tr>\r\n            </tbody>\r\n        </table>\r\n        <div>\r\n            <h3 class=\"col-lg-2\">Balance: <span class=\"label label-info\">{{balance}}</span></h3>\r\n            <h3 class=\"col-lg-3\">\r\n                <!-- Stake: <a @click=\"changeStake\" class=\"label label-info\">{{stake}}</a> -->\r\n                <div class=\"input-group\">\r\n                    <span class=\"input-group-addon\">Stake</span>\r\n                    <input id=\"stake\" v-model=\"stake\" type=\"number\" class=\"form-control\" name=\"stake\" placeholder=\"Enter stake\">\r\n                </div>\r\n            </h3>\r\n            <h3 class=\"col-lg-3\">Win: <span class=\"label label-info\">{{spinResult.Win}}</span></h3>\r\n            <div><button class=\"btn btn-primary\" :disabled=\"spinning\" v-on:click=\"spin\">Spin</button></div>\r\n        </div>\r\n    </div>\r\n</template>\r\n\r\n<script>\r\nimport Noty from 'noty';\r\nimport axios from 'axios';\r\n\r\nexport default {\r\n    data: function(){\r\n        return {\r\n            deposit: 0,\r\n            stake: 0,\r\n            balance: 0,\r\n            spinning: false,\r\n            spinResult:  {}\r\n        };\r\n    },\r\n    created: function(){\r\n        this.spinning = true\r\n        var self = this;\r\n\r\n        axios.get(\"/home/getLastSpin\")\r\n        .then(response => {\r\n            var data = response.data;\r\n            if (data.OK) {                        \r\n                self.spinResult = data.Data;\r\n                self.balance = self.spinResult.Balance;\r\n                self.stake = self.spinResult.Stake;\r\n            }else{\r\n                self.showMessage(data.Message);                        \r\n            }            \r\n        })\r\n        .catch(e => {\r\n            console.log(data);\r\n        }) \r\n        .then(() => {\r\n            // always executed\r\n            self.spinning = false;\r\n        })               \r\n    },\r\n    watch:{\r\n        stake: function(newVal, oldVal){\r\n            this.enterStake(newVal);\r\n        }\r\n    },\r\n    methods: {\r\n        getSymbolClass: function(type){\r\n            if(type == 1){\r\n                return 'apple';\r\n            }else if(type == 2){\r\n                return 'banana'\r\n            }else if(type == 3){\r\n                return 'pineapple'\r\n            }else if(type == 4){\r\n                return 'wyldecard'\r\n            }\r\n        },\r\n        enterDeposit: function () {\r\n            var self = this;\r\n            var jqxhr = $.post(\"/home/enterDeposit\", { deposit: self.deposit }, function () {\r\n                self.balance += self.deposit;\r\n                self.showMessage(self.deposit + ' deposited!', 'info');\r\n            })\r\n            .fail(function (data) {\r\n                console.log(data)\r\n            })\r\n            .always(function () {\r\n                self.deposit = 0;\r\n            });                \r\n        },\r\n        changeStake: function(){\r\n            this.enterStake(20);\r\n            self.stake = 20;\r\n        },\r\n        enterStake: function(stake){\r\n            var self = this;\r\n            var jqxhr = $.post(\"/home/enterStake\", { stake: stake }, function () {\r\n\r\n            })\r\n            .fail(function (data) {\r\n                console.log(data)\r\n            })\r\n            .always(function () {\r\n                //self.stake = 0;\r\n            });\r\n        },\r\n        spin: function(){\r\n            this.spinning = true\r\n            var self = this;\r\n\r\n            var jqxhr = $.get( \"/home/spin\", function(data) {\r\n                if (data.OK) {                        \r\n                    self.spinResult = data.Data;\r\n                    self.balance = self.spinResult.Balance;\r\n                    self.stake = self.spinResult.Stake;\r\n                }else{\r\n                    self.showMessage(data.Message);                        \r\n                }\r\n            })\r\n            .fail(function(data) {\r\n                self.spinResult = {};\r\n                console.log(data);\r\n            })\r\n            .always(function() {\r\n                self.spinning = false;\r\n            });\r\n        },\r\n        showMessage: function(msg, type = 'error'){\r\n            new Noty({\r\n                theme: 'relax',\r\n                text: msg,\r\n                timeout: 1500,\r\n                type: type\r\n            }).show();\r\n        }\r\n    }  \r\n}\r\n</script>\r\n\r\n<style>\r\n\r\n    .gray{\r\n        color: gray;\r\n    }\r\n    .win{\r\n        border: 2px solid red;\r\n    }\r\n    .banana {\r\n        background-size: 32px 32px;\r\n        background-repeat: no-repeat;\r\n        background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTkuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDUxMi4wMDEgNTEyLjAwMSIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTEyLjAwMSA1MTIuMDAxOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgd2lkdGg9IjUxMnB4IiBoZWlnaHQ9IjUxMnB4Ij4KPHBhdGggc3R5bGU9ImZpbGw6I0E2RUQ5QTsiIGQ9Ik0zNzQuNjU0LDEwMy4zOTZsLTIyLjY5Mi02MC4zN2MtMS41NTgtNC4xNDUsMC44MDktOC43MjgsNS4wOTEtOS44NTdsNTEuMTE1LTEzLjQ4NiAgYzMuOTkxLTEuMDUzLDguMDgsMS4zMjgsOS4xMzQsNS4zMTlsMTYuOTgyLDY0LjI4NEwzNzQuNjU0LDEwMy4zOTZ6Ii8+CjxwYXRoIHN0eWxlPSJmaWxsOiNGRkM2NkM7IiBkPSJNNDM0LjI4NSw4OS4yODZsLTU5LjYzMiwxNC4xMWwtMTMuNDY0LDY0Ljk4OGMtOS41MjgsNDUuOTk1LTMxLjE4Miw4OC42MDUtNjIuNzE3LDEyMy40MTdsMCwwICBjLTM4LjUyMiw0Mi41MjUtODkuODc1LDcxLjMxLTE0Ni4yNTQsODEuOTc5bC00My41NDEsOC4yMzljLTE4LjA4MiwzLjQyMS0zNC45NjQsMTEuNDg2LTQ4Ljk5LDIzLjM5OWwwLDBsLTM4LjI5Nyw3LjI0N0wxMCw0NTEuOTggIGwwLDBjMzQuODk1LDIxLjMzNCw3NC4yMjcsMzQuMzYsMTE0Ljk1NywzOC4wN2wxMS4zMDQsMS4wM2M4NC4yNTcsNy42NzYsMTY4LjU0Ny0xNC4zNDEsMjM4LjI4Ni02Mi4yNDJsMCwwICBjNDkuOTEzLTM0LjI4Myw4OC43MzEtODEuNDk4LDExMi40OC0xMzYuNTQ3bDIuMTgzLTUuMDZjMjQuMzAzLTU2LjMzNiwxMy42MDUtMTIxLjY2My0yNy4zOTktMTY3LjMwNEw0MzQuMjg1LDg5LjI4NnoiLz4KPHBhdGggZD0iTTE1Mi4yMDksMzgzLjc4M2MwLjYyMywwLDEuMjU3LTAuMDU5LDEuODkyLTAuMTgxbDAuODI3LTAuMTU4YzUuNDI1LTEuMDM4LDguOTgtNi4yNzgsNy45NDEtMTEuNzA0ICBjLTEuMDM5LTUuNDI1LTYuMjc0LTguOTg3LTExLjcwNC03Ljk0MWwtMC44MjcsMC4xNThjLTUuNDI1LDEuMDM4LTguOTgsNi4yNzgtNy45NDEsMTEuNzA0ICBDMTQzLjMxNCwzODAuNDUxLDE0Ny41MDYsMzgzLjc4MywxNTIuMjA5LDM4My43ODN6Ii8+CjxwYXRoIGQ9Ik00NjkuMjUzLDExMy4yNDNsLTI1LjkxNS0yOC44NDVsLTE2LjM2NS02MS45NWMtMi40NjEtOS4zMTQtMTIuMDQxLTE0Ljg5NC0yMS4zNTUtMTIuNDM1bC01MS4xMTUsMTMuNDg1ICBjLTQuNzcyLDEuMjU5LTguODA2LDQuNDk2LTExLjA3LDguODc5Yy0yLjI2NSw0LjM4NS0yLjU2Nyw5LjU0OC0wLjgzMSwxNC4xNjhsMjEuNjcyLDU3LjY1OGwtMTIuODc3LDYyLjE1MiAgYy05LjE1OSw0NC4yMTItMzAuMDIzLDg1LjI2OC02MC4zMzYsMTE4LjczYy0yNy40MSwzMC4yNTktNjIuMTU2LDUzLjY5MS0xMDAuNDgxLDY3Ljc2Yy01LjE4NiwxLjkwMy03Ljg0Niw3LjY1LTUuOTQyLDEyLjgzNiAgYzEuOTA0LDUuMTg2LDcuNjUxLDcuODQ0LDEyLjgzNiw1Ljk0MmM0MS4zNTEtMTUuMTgxLDc4LjgzOC00MC40NjEsMTA4LjQxMS03My4xMDhjMzIuNzA2LTM2LjEwNCw1NS4yMTYtODAuNCw2NS4wOTgtMTI4LjEwMSAgbDEyLjE3Mi01OC43NTFsNDcuNjU2LTExLjI3N2wyMy41NjIsMjYuMjI2YzM4LjI2Niw0Mi41OTIsNDguMzM3LDEwNC4wODQsMjUuNjU2LDE1Ni42NThsLTIuMTgzLDUuMDYxICBjLTIzLjAzMiw1My4zODgtNjAuNzEsOTkuMTIzLTEwOC45NiwxMzIuMjY0Yy02Ny42NjksNDYuNDgxLTE0OS45NTUsNjcuOTc0LTIzMS43MTYsNjAuNTI3bC0xMS4zMDQtMS4wMjkgIGMtMTQuNTEyLTEuMzIyLTI4LjkxOS0zLjkyOS00My4wMTctNy43MDdjMy42MTEtOS40MzYsNS40OTYtMTkuNDk5LDUuNDk2LTI5LjY0OXYtMy4wNjNjMC01LjUyMy00LjQ3OS0xMC4wMDEtMTAuMDAxLTEwLjAwMSAgcy0xMC4wMDEsNC40NzktMTAuMDAxLDEwLjAwMXYzLjA2M2MwLDguMTQtMS41OTEsMTYuMjA4LTQuNjQ1LDIzLjcxNmMtMTQuNTE2LTUuMTIyLTI4LjU4MS0xMS41MTYtNDEuOTMyLTE5LjEzNWw3LjUyMi0yNS45NjUgIGwzMi4yNjEtNi4xMDVjMS43MDMtMC4zMjIsMy4yOTQtMS4wODEsNC42MTUtMi4yMDRjMTIuNjgyLTEwLjc3MywyOC4wMjYtMTguMTAxLDQ0LjM3NC0yMS4xOTQgIGM1LjQyOC0xLjAyNiw4Ljk5NC02LjI1OSw3Ljk2OC0xMS42ODdjLTEuMDI3LTUuNDI3LTYuMjU4LTguOTk1LTExLjY4OC03Ljk2N2MtMTguODY0LDMuNTY4LTM2LjYyMSwxMS44MDctNTEuNTI2LDIzLjg3OCAgbC0zNS43NjEsNi43NjhjLTMuNzA0LDAuNy02LjY5OCwzLjQyMy03Ljc0Nyw3LjA0NEwwLjM5Niw0NDkuMTk4Yy0xLjI1NCw0LjMzLDAuNTQzLDguOTY0LDQuMzkxLDExLjMxNiAgYzE4Ljg0MSwxMS41MTksMzkuMTE4LDIwLjc0NSw2MC4xOSwyNy40NzdjMC41MjYsMC4yMiwxLjA2MywwLjM4NCwxLjYwNSwwLjUwOWMxOC42OTQsNS44NDksMzcuOTk4LDkuNzM3LDU3LjQ3MiwxMS41MTIgIGwxMS4zMDQsMS4wMjljMTEuMjIxLDEuMDIxLDIyLjQzNywxLjUyOCwzMy42NDIsMS41MjhjNzUuMDY0LTAuMDAzLDE0OC45OTUtMjIuNzUxLDIxMS4yMTYtNjUuNDg3ICBjNTEuMzYxLTM1LjI3OCw5MS40NzItODMuOTc2LDExNS45OTktMTQwLjgzbDIuMTgzLTUuMDYxQzUyNC4xNTksMjMxLjQ3NCw1MTIuNzIxLDE2MS42MjUsNDY5LjI1MywxMTMuMjQzeiBNNDA4LjI3NywyOS45OTggIGwxMy43MTYsNTEuOTE4bC00MS4wNzUsOS43MTlsLTE4LjYxLTQ5LjUxTDQwOC4yNzcsMjkuOTk4eiIvPgo8cGF0aCBkPSJNNDQyLjI5MywyODQuMjY4YzMuODU4LDAsNy41MzQtMi4yNDYsOS4xNzQtNi4wMWwwLjQ4Ni0xLjEyMmMyLjE3Ny01LjA3Ny0wLjE3My0xMC45NTctNS4yNDktMTMuMTM1ICBjLTUuMDc5LTIuMTc1LTEwLjk1NywwLjE3My0xMy4xMzUsNS4yNDlsLTAuNDQxLDEuMDE5Yy0yLjIwNiw1LjA2NCwwLjExMSwxMC45NTgsNS4xNzUsMTMuMTY0ICBDNDM5LjYwMywyODQsNDQwLjk1OSwyODQuMjY4LDQ0Mi4yOTMsMjg0LjI2OHoiLz4KPHBhdGggZD0iTTM0Ny4yNjMsMzk5LjEwMmMxLjk1MSwwLDMuOTI0LTAuNTcsNS42NTQtMS43NThjMjkuMTEyLTE5Ljk5Nyw1My44Ny00NC44NDMsNzMuNTg2LTczLjg1ICBjMy4xMDQtNC41NjgsMS45MTktMTAuNzg5LTIuNjQ5LTEzLjg5NGMtNC41NjktMy4xMDUtMTAuNzg5LTEuOTE5LTEzLjg5NCwyLjY0OWMtMTguMzEyLDI2Ljk0MS00MS4zMTQsNTAuMDIzLTY4LjM2OCw2OC42MDUgIGMtNC41NTMsMy4xMjctNS43MDksOS4zNTQtMi41ODEsMTMuOTA3QzM0MC45NDksMzk3LjU4NCwzNDQuMDc5LDM5OS4xMDIsMzQ3LjI2MywzOTkuMTAyeiIvPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);\r\n        width: 32px;\r\n        height: 32px;\r\n    }\r\n\r\n    .apple {\r\n        background-size: 32px 32px;\r\n        background-repeat: no-repeat;\r\n        background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTguMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDU2LjY3MyA1Ni42NzMiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDU2LjY3MyA1Ni42NzM7IiB4bWw6c3BhY2U9InByZXNlcnZlIiB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiPgo8Zz4KCTxwYXRoIHN0eWxlPSJmaWxsOiNEMTM4MzQ7IiBkPSJNMzEuNDgzLDE2LjIxM2MtMi4wNjUsMC41MTEtNC4yMjcsMC41MTEtNi4yOTIsMGMtMTAuNzU2LTIuNjYtMTkuNzYyLTEuNjQtMTkuNjU4LDE4LjY0MyAgIGMwLjA1MywxMC4zOSw5Ljc4MywyMy44NjIsMjAuMDA5LDIxLjU1N2MxLjgzNC0wLjQxMywzLjc1NS0wLjQxMyw1LjU4OSwwYzEwLjIyNiwyLjMwNSwxOS45NTYtMTEuMTY3LDIwLjAwOS0yMS41NTcgICBDNTEuMjQ0LDE0LjU3NCw0Mi4yMzksMTMuNTUzLDMxLjQ4MywxNi4yMTN6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojRjc1QjU3OyIgZD0iTTEwLjUzMywyOS42NzRjLTAuNTUzLDAtMS0wLjQ0OC0xLTFjMC01LjUxNCw0LjAzNy0xMCw5LTEwYzAuNTUzLDAsMSwwLjQ0OCwxLDFzLTAuNDQ3LDEtMSwxICAgYy0zLjg1OSwwLTcsMy41ODktNyw4QzExLjUzMywyOS4yMjYsMTEuMDg1LDI5LjY3NCwxMC41MzMsMjkuNjc0eiIvPgoJPHBhdGggc3R5bGU9ImZpbGw6IzRDMzEyQzsiIGQ9Ik0yOC4yNjUsMTkuOTk5Yy0wLjUzNywwLTAuOTgxLTAuNDI3LTAuOTk4LTAuOTY4Yy0wLjEzNS00LjIzMi0xLjc2MS05LjU0NS01LjkyMi0xMS43NjQgICBjLTAuNDg3LTAuMjYtMC42NzItMC44NjUtMC40MTItMS4zNTNjMC4yNjEtMC40ODcsMC44NjQtMC42NzIsMS4zNTQtMC40MTJjNC45MTQsMi42Miw2LjgyNyw4LjY3Myw2Ljk3OSwxMy40NjUgICBjMC4wMTgsMC41NTItMC40MTUsMS4wMTQtMC45NjgsMS4wMzFDMjguMjg2LDE5Ljk5OSwyOC4yNzYsMTkuOTk5LDI4LjI2NSwxOS45OTl6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojOTk0NTMwOyIgZD0iTTI4LjE3NiwyMy41OTJjLTEuNjgsMC0zLjI2MS0wLjY1NS00LjQ1LTEuODQ1Yy0wLjM5MS0wLjM5LTAuMzkxLTEuMDIzLDAtMS40MTQgICBzMS4wMjMtMC4zOTEsMS40MTQsMGMwLjgxMiwwLjgxMiwxLjg5MSwxLjI1OSwzLjAzNiwxLjI1OXMyLjIyNC0wLjQ0NywzLjAzNS0xLjI1OWMwLjM5MS0wLjM5MSwxLjAyMy0wLjM5MSwxLjQxNCwwICAgYzAuMzkxLDAuMzksMC4zOTEsMS4wMjMsMCwxLjQxNEMzMS40MzYsMjIuOTM3LDI5Ljg1NiwyMy41OTIsMjguMTc2LDIzLjU5MnoiLz4KCTxwYXRoIHN0eWxlPSJmaWxsOiM2NTlDMzU7IiBkPSJNMjcuMzA1LDEzLjA0bDAuNjA5LTQuMDg2YzAuNjQzLTQuMzE1LDQuMDMxLTcuNzAzLDguMzQ2LTguMzQ2TDQwLjM0NSwwbC0wLjYwOSw0LjA4NiAgIGMtMC42NDMsNC4zMTUtNC4wMzEsNy43MDMtOC4zNDYsOC4zNDZMMjcuMzA1LDEzLjA0eiIvPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+Cjwvc3ZnPgo=);\r\n        width: 32px;\r\n        height: 32px;\r\n    }\r\n\r\n    .pineapple {\r\n        background-size: 32px 32px;\r\n        background-repeat: no-repeat;\r\n        background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTguMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDU3LjA2IDU3LjA2IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1Ny4wNiA1Ny4wNjsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI1MTJweCIgaGVpZ2h0PSI1MTJweCI+CjxnPgoJPHBhdGggc3R5bGU9ImZpbGw6I0Q2QTU1MDsiIGQ9Ik0yOC43NTgsMTkuMDZjMTYuMDU4LDAsMTUuOTQ0LDguNTA3LDE1Ljk0NCwxOXMtNy4xMzksMTktMTUuOTQ0LDE5aC0wLjQ1NiAgIGMtOC44MDYsMC0xNS45NDQtOC41MDctMTUuOTQ0LTE5cy0wLjExNC0xOSwxNS45NDQtMTkiLz4KCTxnPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiM4OEMwNTc7IiBkPSJNMzIuNTEsMTMuMzg5YzAuNTE1LTAuNjQ0LDEuMDk1LTEuMjQ2LDEuNzI4LTEuNzdjMC43OTEtNC41Niw2LjIzNC04LjI3OCwxMC4xMTktOS4yOCAgICBjMCwwLTMuMzE4LTIuNzYtNy40MzMtMi4yODRjLTQuMjY0LDAuNDkzLTYuNjg4LDIuNTg0LTguMDU1LDUuMDU2QzMxLjc1LDcuMzYxLDMyLjQyOSwxMC45MDQsMzIuNTEsMTMuMzg5eiIvPgoJPC9nPgoJPHBhdGggc3R5bGU9ImZpbGw6IzY1OUMzNTsiIGQ9Ik0yMy4yNTUsMTkuNDExYzEuNDc2LTAuMjI4LDMuMTQ1LTAuMzUxLDUuMDQ4LTAuMzUxaDAuMDU2YzAsMCwwLjE2Ny01LjA0Mi01LTYgICBjLTUuMTY3LTAuOTU4LTYsMi02LDJDMjEuODI1LDE2LjEzMSwyMi45NjMsMTguMzIxLDIzLjI1NSwxOS40MTF6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojNjU5QzM1OyIgZD0iTTM0LjYxMiwxOS41NTNjMC44MTktMS41NTIsNC42OC01LjI3OSw5Ljc0Ni02LjQ5M2MwLDAtMS44MzMtMy45NTgtNy0zICAgYy01LjE2NywwLjk1OC03Ljk5OSw5LTcuOTk5LDlzMC4wMjgsMC4wMDUsMC4wNjksMC4wMTFDMzEuMzk5LDE5LjEwMiwzMy4xMTcsMTkuMjY3LDM0LjYxMiwxOS41NTN6Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojQTRFODY5OyIgZD0iTTI1Ljk4OCwxNC4xNTZjMi4yNiwxLjY1MiwyLjM2Nyw0LjM5OSwyLjM3LDQuODM4YzAuMzM1LDAuMDE2LDAuNjc5LDAuMDE0LDEuMDI1LDAgICBjMC4xNDUtMC4zOTUsMS4wMjEtMi42ODIsMi41NjUtNC44NTljMC4wNTktMC4xMTUsMC4xMTktMC4yMDQsMC4xODEtMC4yNDJjMC4wNzQtMC4xMDEsMC4xNTItMC4yMDEsMC4yMjgtMC4zMDEgICBjMC4wNTItMC4wNjcsMC4xLTAuMTM2LDAuMTU0LTAuMjAzYy0wLjExOS0zLjYyNi0xLjUwNi05LjUwNy05LjE1My0xMC4zMjljLTMuODc1LTAuNDE3LTcsMi03LDIgICBDMjAuMzA5LDYuMDA3LDI1Ljk4Myw5LjcyNywyNS45ODgsMTQuMTU2TDI1Ljk4OCwxNC4xNTZ6Ii8+Cgk8Zz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyMS4zNTgsNDQuNjQ2IDE3LjY1MSw0OC4zNTMgMTkuMDY1LDQ5Ljc2NyAyMS4zNTgsNDcuNDc0IDIzLjY1MSw0OS43NjcgMjUuMDY1LDQ4LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyNC42NTEsNTMuMzUzIDI2LjA2NSw1NC43NjcgMjguMzU4LDUyLjQ3NCAzMC42NTEsNTQuNzY3IDMyLjA2NSw1My4zNTMgMjguMzU4LDQ5LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzMS42NTEsNDguMzUzIDMzLjA2NSw0OS43NjcgMzUuMzU4LDQ3LjQ3NCAzNy42NTEsNDkuNzY3IDM5LjA2NSw0OC4zNTMgMzUuMzU4LDQ0LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxOS4wNjUsNDEuNzY3IDIxLjM1OCwzOS40NzQgMjMuNjUxLDQxLjc2NyAyNS4wNjUsNDAuMzUzIDIxLjM1OCwzNi42NDYgMTcuNjUxLDQwLjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyOC4zNTgsNDMuNDc0IDMwLjY1MSw0NS43NjcgMzIuMDY1LDQ0LjM1MyAyOC4zNTgsNDAuNjQ2IDI0LjY1MSw0NC4zNTMgMjYuMDY1LDQ1Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxNC40OTgsNDAuNjQ2IDEyLjc5MSw0Mi4zNTMgMTQuMjA1LDQzLjc2NyAxNC40OTgsNDMuNDc0IDE2Ljc5MSw0NS43NjcgMTguMjA1LDQ0LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMzkuNDc0IDM3LjY1MSw0MS43NjcgMzkuMDY1LDQwLjM1MyAzNS4zNTgsMzYuNjQ2IDMxLjY1MSw0MC4zNTMgMzMuMDY1LDQxLjc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIxNy42NTEsMzIuMzUzIDE5LjA2NSwzMy43NjcgMjEuMzU4LDMxLjQ3NCAyMy42NTEsMzMuNzY3IDI1LjA2NSwzMi4zNTMgMjEuMzU4LDI4LjY0NiAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyOC4zNTgsMzUuNDc0IDMwLjY1MSwzNy43NjcgMzIuMDY1LDM2LjM1MyAyOC4zNTgsMzIuNjQ2IDI0LjY1MSwzNi4zNTMgMjYuMDY1LDM3Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMjguNjQ2IDMxLjY1MSwzMi4zNTMgMzMuMDY1LDMzLjc2NyAzNS4zNTgsMzEuNDc0IDM3LjY1MSwzMy43NjcgMzkuMDY1LDMyLjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyMS4zNTgsMjMuNDc0IDIzLjY1MSwyNS43NjcgMjUuMDY1LDI0LjM1MyAyMS4zNTgsMjAuNjQ2IDE3LjY1MSwyNC4zNTMgMTkuMDY1LDI1Ljc2NyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIyNi4wNjUsMjkuNzY3IDI4LjM1OCwyNy40NzQgMzAuNjUxLDI5Ljc2NyAzMi4wNjUsMjguMzUzIDI4LjM1OCwyNC42NDYgMjQuNjUxLDI4LjM1MyAgICAgICAiLz4KCQk8cG9seWdvbiBzdHlsZT0iZmlsbDojRjRDNDRFOyIgcG9pbnRzPSIzNS4zNTgsMjMuNDc0IDM3LjY1MSwyNS43NjcgMzkuMDY1LDI0LjM1MyAzNS4zNTgsMjAuNjQ2IDMxLjY1MSwyNC4zNTMgMzMuMDY1LDI1Ljc2NyAgICAgICAiLz4KCQk8cGF0aCBzdHlsZT0iZmlsbDojRjRDNDRFOyIgZD0iTTQzLjIxMiwyNS41MzhsLTAuNjk5LTEuMDQ4bC0zLjg2MiwzLjg2M2wxLjQxNCwxLjQxNGwyLjEzOC0yLjEzN2wxLjMyMywxLjk4NWwwLjczMi0wLjQ4OCAgICBDNDQuMDM4LDI3LjgzMyw0My43MDUsMjYuNjMxLDQzLjIxMiwyNS41Mzh6Ii8+CgkJPHBhdGggc3R5bGU9ImZpbGw6I0Y0QzQ0RTsiIGQ9Ik00Mi4xNiw0MC44NDNsLTMuNTEsMy41MWwxLjQxNCwxLjQxNGwyLjQ5LTIuNDlsMS4zNTUsMC42NzhjMC4xOC0wLjY1NiwwLjMzNi0xLjMyMywwLjQ1Ni0yLjAwOCAgICBMNDIuMTYsNDAuODQzeiIvPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiNGNEM0NEU7IiBkPSJNMTQuMjMsMjQuNzc0Yy0wLjM4MywwLjY5My0wLjY4OCwxLjQzOC0wLjkzLDIuMjI4bDAuNzY1LDAuNzY1bDAuMjkzLTAuMjkzbDIuMjkzLDIuMjkzICAgIGwxLjQxNC0xLjQxNGwtMy43MDctMy43MDdMMTQuMjMsMjQuNzc0eiIvPgoJCTxwYXRoIHN0eWxlPSJmaWxsOiNGNEM0NEU7IiBkPSJNNDQuNjg5LDM0Ljk3N2wtMi4zMzEtMi4zMzFsLTMuNzA3LDMuNzA3bDEuNDE0LDEuNDE0bDIuMjkzLTIuMjkzbDEuMjkzLDEuMjkzbDEuMDQ2LTEuMDQ2ICAgIEM0NC42OTUsMzUuNDcyLDQ0LjY5MiwzNS4yMjMsNDQuNjg5LDM0Ljk3N3oiLz4KCQk8cGF0aCBzdHlsZT0iZmlsbDojRjRDNDRFOyIgZD0iTTEyLjM3OCwzNC42MjZjLTAuMDA4LDAuNDc0LTAuMDE0LDAuOTUyLTAuMDE3LDEuNDM3bDAuNzA0LDAuNzA0bDEuMjkzLTEuMjkzbDIuMjkzLDIuMjkzICAgIGwxLjQxNC0xLjQxNGwtMy43MDctMy43MDdMMTIuMzc4LDM0LjYyNnoiLz4KCTwvZz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);\r\n        width: 32px;\r\n        height: 32px;\r\n    }\r\n\r\n    .wyldecard {\r\n        background-size: 32px 32px;\r\n        background-repeat: no-repeat;\r\n        background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTkuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDQ3Ljk0IDQ3Ljk0IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA0Ny45NCA0Ny45NDsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI1MTJweCIgaGVpZ2h0PSI1MTJweCI+CjxwYXRoIHN0eWxlPSJmaWxsOiNFRDhBMTk7IiBkPSJNMjYuMjg1LDIuNDg2bDUuNDA3LDEwLjk1NmMwLjM3NiwwLjc2MiwxLjEwMywxLjI5LDEuOTQ0LDEuNDEybDEyLjA5MSwxLjc1NyAgYzIuMTE4LDAuMzA4LDIuOTYzLDIuOTEsMS40MzEsNC40MDNsLTguNzQ5LDguNTI4Yy0wLjYwOCwwLjU5My0wLjg4NiwxLjQ0OC0wLjc0MiwyLjI4NWwyLjA2NSwxMi4wNDIgIGMwLjM2MiwyLjEwOS0xLjg1MiwzLjcxNy0zLjc0NiwyLjcyMmwtMTAuODE0LTUuNjg1Yy0wLjc1Mi0wLjM5NS0xLjY1MS0wLjM5NS0yLjQwMywwbC0xMC44MTQsNS42ODUgIGMtMS44OTQsMC45OTYtNC4xMDgtMC42MTMtMy43NDYtMi43MjJsMi4wNjUtMTIuMDQyYzAuMTQ0LTAuODM3LTAuMTM0LTEuNjkyLTAuNzQyLTIuMjg1bC04Ljc0OS04LjUyOCAgYy0xLjUzMi0xLjQ5NC0wLjY4Ny00LjA5NiwxLjQzMS00LjQwM2wxMi4wOTEtMS43NTdjMC44NDEtMC4xMjIsMS41NjgtMC42NSwxLjk0NC0xLjQxMmw1LjQwNy0xMC45NTYgIEMyMi42MDIsMC41NjcsMjUuMzM4LDAuNTY3LDI2LjI4NSwyLjQ4NnoiLz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPC9zdmc+Cg==);\r\n        width: 32px;\r\n        height: 32px;\r\n    }\r\n\r\n    .margin-top_25px{\r\n        margin-top: 25px;\r\n    }\r\n    .inline-block{\r\n        display: inline-block;\r\n    }\r\n</style>\r\n\r\n"],"sourceRoot":""}]);
-
-// exports
-
-
-/***/ }),
+/* 4 */,
+/* 5 */,
 /* 6 */
 /***/ (function(module, exports) {
 
@@ -3959,134 +3955,130 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", [
-    _c("h3", { staticClass: "gray" }, [
-      _vm._v("Enter deposit and set stake size")
-    ]),
-    _vm._v(" "),
-    _c("div", { staticClass: "form-group margin-top_25px" }, [
-      _c("label", { attrs: { for: "deposit" } }, [_vm._v("Deposit:")]),
+  return _c(
+    "div",
+    [
+      _c("h3", { staticClass: "gray" }, [
+        _vm._v("Enter deposit and set stake size")
+      ]),
       _vm._v(" "),
-      _c("input", {
-        directives: [
-          {
-            name: "model",
-            rawName: "v-model.number",
-            value: _vm.deposit,
-            expression: "deposit",
-            modifiers: { number: true }
-          }
-        ],
-        staticClass: "form-control inline-block",
-        attrs: { type: "number", id: "deposit" },
-        domProps: { value: _vm.deposit },
-        on: {
-          input: function($event) {
-            if ($event.target.composing) {
-              return
-            }
-            _vm.deposit = _vm._n($event.target.value)
-          },
-          blur: function($event) {
-            _vm.$forceUpdate()
-          }
-        }
-      }),
-      _vm._v(" "),
-      _c(
-        "button",
-        {
-          staticClass: "btn btn-primary inline-block",
-          on: { click: _vm.enterDeposit }
-        },
-        [_vm._v("Enter")]
-      )
-    ]),
-    _vm._v(" "),
-    _c(
-      "table",
-      { staticClass: "table", staticStyle: { "margin-top": "45px" } },
-      [
-        _c("thead"),
-        _vm._v(" "),
+      _c("div", { staticClass: "form-group margin-top_25px" }, [
         _c(
-          "tbody",
-          _vm._l(_vm.spinResult.Dimensions, function(dimension) {
-            return _c(
-              "tr",
-              { class: { "active win": dimension.IsWin } },
-              _vm._l(dimension.Symbols, function(symbol) {
-                return _c("td", [
-                  _c("div", { class: _vm.getSymbolClass(symbol.Type) })
-                ])
-              })
-            )
-          })
-        )
-      ]
-    ),
-    _vm._v(" "),
-    _c("div", [
-      _c("h3", { staticClass: "col-lg-2" }, [
-        _vm._v("Balance: "),
-        _c("span", { staticClass: "label label-info" }, [
-          _vm._v(_vm._s(_vm.balance))
-        ])
-      ]),
-      _vm._v(" "),
-      _c("h3", { staticClass: "col-lg-3" }, [
-        _c("div", { staticClass: "input-group" }, [
-          _c("span", { staticClass: "input-group-addon" }, [_vm._v("Stake")]),
-          _vm._v(" "),
-          _c("input", {
-            directives: [
-              {
-                name: "model",
-                rawName: "v-model",
-                value: _vm.stake,
-                expression: "stake"
-              }
-            ],
-            staticClass: "form-control",
-            attrs: {
-              id: "stake",
-              type: "number",
-              name: "stake",
-              placeholder: "Enter stake"
-            },
-            domProps: { value: _vm.stake },
-            on: {
-              input: function($event) {
-                if ($event.target.composing) {
-                  return
-                }
-                _vm.stake = $event.target.value
-              }
-            }
-          })
-        ])
-      ]),
-      _vm._v(" "),
-      _c("h3", { staticClass: "col-lg-3" }, [
-        _vm._v("Win: "),
-        _c("span", { staticClass: "label label-info" }, [
-          _vm._v(_vm._s(_vm.spinResult.Win))
-        ])
-      ]),
-      _vm._v(" "),
-      _c("div", [
+          "button",
+          { staticClass: "btn btn-primary", on: { click: _vm.enterDeposit } },
+          [_vm._v("Deposit")]
+        ),
+        _vm._v(" "),
         _c(
           "button",
           {
-            staticClass: "btn btn-primary",
-            attrs: { disabled: _vm.spinning },
-            on: { click: _vm.spin }
+            staticClass: "btn btn-warning margin-left_30",
+            on: { click: _vm.startAgain }
           },
-          [_vm._v("Spin")]
-        )
-      ])
-    ])
-  ])
+          [_vm._v("Start again")]
+        ),
+        _vm._v(" "),
+        _c("input", {
+          directives: [
+            {
+              name: "model",
+              rawName: "v-model",
+              value: _vm.stake,
+              expression: "stake"
+            }
+          ],
+          staticClass: "form-control pull-right",
+          attrs: {
+            type: "number",
+            placeholder: "Enter stake",
+            min: "0",
+            oninput: "validity.valid||(value='');"
+          },
+          domProps: { value: _vm.stake },
+          on: {
+            input: function($event) {
+              if ($event.target.composing) {
+                return
+              }
+              _vm.stake = $event.target.value
+            }
+          }
+        })
+      ]),
+      _vm._v(" "),
+      _c(
+        "table",
+        { staticClass: "table", staticStyle: { "margin-top": "45px" } },
+        [
+          _c("thead"),
+          _vm._v(" "),
+          _c(
+            "tbody",
+            _vm._l(_vm.dimensions, function(dimension) {
+              return _c(
+                "tr",
+                { class: { "active win": dimension.IsWin } },
+                _vm._l(dimension.Symbols, function(symbol) {
+                  return _c("td", [
+                    _vm.spinning
+                      ? _c("div", { staticClass: "cube" }, [
+                          _c("div", { staticClass: "front apple" }),
+                          _vm._v(" "),
+                          _c("div", { staticClass: "back banana" }),
+                          _vm._v(" "),
+                          _c("div", { staticClass: "top" }),
+                          _vm._v(" "),
+                          _c("div", { staticClass: "bottom" }),
+                          _vm._v(" "),
+                          _c("div", { staticClass: "left pineapple" }),
+                          _vm._v(" "),
+                          _c("div", { staticClass: "right wyldecard" })
+                        ])
+                      : _c("div", { class: _vm.getSymbolClass(symbol.Type) })
+                  ])
+                })
+              )
+            })
+          )
+        ]
+      ),
+      _vm._v(" "),
+      _c("div", { staticClass: "form-group row" }, [
+        _c("h3", { staticClass: "pull-left" }, [
+          _vm._v("Balance: "),
+          _c("span", { staticClass: "label label-info" }, [
+            _vm._v(_vm._s(_vm.balance))
+          ])
+        ]),
+        _vm._v(" "),
+        _c("h3", { staticClass: "pull-left margin-left_30" }, [
+          _vm._v("Win: "),
+          _c("span", { staticClass: "label label-info" }, [
+            _vm._v(_vm._s(_vm.win))
+          ])
+        ]),
+        _vm._v(" "),
+        _c("div", { staticClass: "pull-right" }, [
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-primary",
+              staticStyle: { width: "80px", height: "64px" },
+              attrs: { disabled: _vm.spinning },
+              on: { click: _vm.spin }
+            },
+            [_vm._v("Spin")]
+          )
+        ])
+      ]),
+      _vm._v(" "),
+      _c("deposit-modal", {
+        ref: "depositModal",
+        on: { deposit: _vm.onDeposit }
+      })
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -17076,6 +17068,1237 @@ module.exports = function spread(callback) {
   };
 };
 
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+!function(root, factory) {
+     true ? module.exports = factory() : "function" == typeof define && define.amd ? define([], factory) : "object" == typeof exports ? exports["vue-js-modal"] = factory() : root["vue-js-modal"] = factory();
+}(this, function() {
+    return function(modules) {
+        function __webpack_require__(moduleId) {
+            if (installedModules[moduleId]) return installedModules[moduleId].exports;
+            var module = installedModules[moduleId] = {
+                i: moduleId,
+                l: !1,
+                exports: {}
+            };
+            return modules[moduleId].call(module.exports, module, module.exports, __webpack_require__), 
+            module.l = !0, module.exports;
+        }
+        var installedModules = {};
+        return __webpack_require__.m = modules, __webpack_require__.c = installedModules, 
+        __webpack_require__.i = function(value) {
+            return value;
+        }, __webpack_require__.d = function(exports, name, getter) {
+            __webpack_require__.o(exports, name) || Object.defineProperty(exports, name, {
+                configurable: !1,
+                enumerable: !0,
+                get: getter
+            });
+        }, __webpack_require__.n = function(module) {
+            var getter = module && module.__esModule ? function() {
+                return module.default;
+            } : function() {
+                return module;
+            };
+            return __webpack_require__.d(getter, "a", getter), getter;
+        }, __webpack_require__.o = function(object, property) {
+            return Object.prototype.hasOwnProperty.call(object, property);
+        }, __webpack_require__.p = "/dist/", __webpack_require__(__webpack_require__.s = 3);
+    }([ function(module, exports) {
+        module.exports = function(rawScriptExports, compiledTemplate, scopeId, cssModules) {
+            var esModule, scriptExports = rawScriptExports = rawScriptExports || {}, type = typeof rawScriptExports.default;
+            "object" !== type && "function" !== type || (esModule = rawScriptExports, scriptExports = rawScriptExports.default);
+            var options = "function" == typeof scriptExports ? scriptExports.options : scriptExports;
+            if (compiledTemplate && (options.render = compiledTemplate.render, options.staticRenderFns = compiledTemplate.staticRenderFns), 
+            scopeId && (options._scopeId = scopeId), cssModules) {
+                var computed = options.computed || (options.computed = {});
+                Object.keys(cssModules).forEach(function(key) {
+                    var module = cssModules[key];
+                    computed[key] = function() {
+                        return module;
+                    };
+                });
+            }
+            return {
+                esModule: esModule,
+                exports: scriptExports,
+                options: options
+            };
+        };
+    }, function(module, exports) {
+        module.exports = function() {
+            var list = [];
+            return list.toString = function() {
+                for (var result = [], i = 0; i < this.length; i++) {
+                    var item = this[i];
+                    item[2] ? result.push("@media " + item[2] + "{" + item[1] + "}") : result.push(item[1]);
+                }
+                return result.join("");
+            }, list.i = function(modules, mediaQuery) {
+                "string" == typeof modules && (modules = [ [ null, modules, "" ] ]);
+                for (var alreadyImportedModules = {}, i = 0; i < this.length; i++) {
+                    var id = this[i][0];
+                    "number" == typeof id && (alreadyImportedModules[id] = !0);
+                }
+                for (i = 0; i < modules.length; i++) {
+                    var item = modules[i];
+                    "number" == typeof item[0] && alreadyImportedModules[item[0]] || (mediaQuery && !item[2] ? item[2] = mediaQuery : mediaQuery && (item[2] = "(" + item[2] + ") and (" + mediaQuery + ")"), 
+                    list.push(item));
+                }
+            }, list;
+        };
+    }, function(module, exports, __webpack_require__) {
+        function addStylesToDom(styles) {
+            for (var i = 0; i < styles.length; i++) {
+                var item = styles[i], domStyle = stylesInDom[item.id];
+                if (domStyle) {
+                    domStyle.refs++;
+                    for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j](item.parts[j]);
+                    for (;j < item.parts.length; j++) domStyle.parts.push(addStyle(item.parts[j]));
+                    domStyle.parts.length > item.parts.length && (domStyle.parts.length = item.parts.length);
+                } else {
+                    for (var parts = [], j = 0; j < item.parts.length; j++) parts.push(addStyle(item.parts[j]));
+                    stylesInDom[item.id] = {
+                        id: item.id,
+                        refs: 1,
+                        parts: parts
+                    };
+                }
+            }
+        }
+        function createStyleElement() {
+            var styleElement = document.createElement("style");
+            return styleElement.type = "text/css", head.appendChild(styleElement), styleElement;
+        }
+        function addStyle(obj) {
+            var update, remove, styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]');
+            if (styleElement) {
+                if (isProduction) return noop;
+                styleElement.parentNode.removeChild(styleElement);
+            }
+            if (isOldIE) {
+                var styleIndex = singletonCounter++;
+                styleElement = singletonElement || (singletonElement = createStyleElement()), update = applyToSingletonTag.bind(null, styleElement, styleIndex, !1), 
+                remove = applyToSingletonTag.bind(null, styleElement, styleIndex, !0);
+            } else styleElement = createStyleElement(), update = applyToTag.bind(null, styleElement), 
+            remove = function() {
+                styleElement.parentNode.removeChild(styleElement);
+            };
+            return update(obj), function(newObj) {
+                if (newObj) {
+                    if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap) return;
+                    update(obj = newObj);
+                } else remove();
+            };
+        }
+        function applyToSingletonTag(styleElement, index, remove, obj) {
+            var css = remove ? "" : obj.css;
+            if (styleElement.styleSheet) styleElement.styleSheet.cssText = replaceText(index, css); else {
+                var cssNode = document.createTextNode(css), childNodes = styleElement.childNodes;
+                childNodes[index] && styleElement.removeChild(childNodes[index]), childNodes.length ? styleElement.insertBefore(cssNode, childNodes[index]) : styleElement.appendChild(cssNode);
+            }
+        }
+        function applyToTag(styleElement, obj) {
+            var css = obj.css, media = obj.media, sourceMap = obj.sourceMap;
+            if (media && styleElement.setAttribute("media", media), sourceMap && (css += "\n/*# sourceURL=" + sourceMap.sources[0] + " */", 
+            css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */"), 
+            styleElement.styleSheet) styleElement.styleSheet.cssText = css; else {
+                for (;styleElement.firstChild; ) styleElement.removeChild(styleElement.firstChild);
+                styleElement.appendChild(document.createTextNode(css));
+            }
+        }
+        var hasDocument = "undefined" != typeof document;
+        if ("undefined" != typeof DEBUG && DEBUG && !hasDocument) throw new Error("vue-style-loader cannot be used in a non-browser environment. Use { target: 'node' } in your Webpack config to indicate a server-rendering environment.");
+        var listToStyles = __webpack_require__(24), stylesInDom = {}, head = hasDocument && (document.head || document.getElementsByTagName("head")[0]), singletonElement = null, singletonCounter = 0, isProduction = !1, noop = function() {}, isOldIE = "undefined" != typeof navigator && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase());
+        module.exports = function(parentId, list, _isProduction) {
+            isProduction = _isProduction;
+            var styles = listToStyles(parentId, list);
+            return addStylesToDom(styles), function(newList) {
+                for (var mayRemove = [], i = 0; i < styles.length; i++) {
+                    var item = styles[i], domStyle = stylesInDom[item.id];
+                    domStyle.refs--, mayRemove.push(domStyle);
+                }
+                newList ? (styles = listToStyles(parentId, newList), addStylesToDom(styles)) : styles = [];
+                for (var i = 0; i < mayRemove.length; i++) {
+                    var domStyle = mayRemove[i];
+                    if (0 === domStyle.refs) {
+                        for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+                        delete stylesInDom[domStyle.id];
+                    }
+                }
+            };
+        };
+        var replaceText = function() {
+            var textStore = [];
+            return function(index, replacement) {
+                return textStore[index] = replacement, textStore.filter(Boolean).join("\n");
+            };
+        }();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        });
+        var _Modal = __webpack_require__(6), _Modal2 = _interopRequireDefault(_Modal), _Dialog = __webpack_require__(5), _Dialog2 = _interopRequireDefault(_Dialog), _ModalsContainer = __webpack_require__(7), _ModalsContainer2 = _interopRequireDefault(_ModalsContainer), Plugin = {
+            install: function(Vue) {
+                var options = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};
+                this.installed || (this.installed = !0, this.event = new Vue(), this.dynamicContainer = null, 
+                this.componentName = options.componentName || "modal", Vue.prototype.$modal = {
+                    _setDynamicContainer: function(dynamicContainer) {
+                        Plugin.dynamicContainer = dynamicContainer;
+                    },
+                    show: function(modal, paramsOrProps, params) {
+                        var events = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : {};
+                        "string" == typeof modal ? Plugin.event.$emit("toggle", modal, !0, paramsOrProps) : null === Plugin.dynamicContainer ? console.warn("[vue-js-modal] In order to render dynamic modals, a <modals-container> component must be present on the page") : Plugin.dynamicContainer.add(modal, paramsOrProps, params, events);
+                    },
+                    hide: function(name, params) {
+                        Plugin.event.$emit("toggle", name, !1, params);
+                    },
+                    toggle: function(name, params) {
+                        Plugin.event.$emit("toggle", name, void 0, params);
+                    }
+                }, Vue.component(this.componentName, _Modal2.default), options.dialog && Vue.component("v-dialog", _Dialog2.default), 
+                options.dynamic && Vue.component("modals-container", _ModalsContainer2.default));
+            }
+        };
+        exports.default = Plugin;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        });
+        var inRange = exports.inRange = function(from, to, value) {
+            return value < from ? from : value > to ? to : value;
+        };
+        exports.default = {
+            inRange: inRange
+        };
+    }, function(module, exports, __webpack_require__) {
+        __webpack_require__(21);
+        var Component = __webpack_require__(0)(__webpack_require__(8), __webpack_require__(18), null, null);
+        Component.options.__file = "/Users/yev.vlasenko2/Projects/vue/vue-js-modal/src/Dialog.vue", 
+        Component.esModule && Object.keys(Component.esModule).some(function(key) {
+            return "default" !== key && "__esModule" !== key;
+        }) && console.error("named exports are not supported in *.vue files."), Component.options.functional && console.error("[vue-loader] Dialog.vue: functional components are not supported with templates, they should use render functions."), 
+        module.exports = Component.exports;
+    }, function(module, exports, __webpack_require__) {
+        __webpack_require__(22);
+        var Component = __webpack_require__(0)(__webpack_require__(9), __webpack_require__(19), null, null);
+        Component.options.__file = "/Users/yev.vlasenko2/Projects/vue/vue-js-modal/src/Modal.vue", 
+        Component.esModule && Object.keys(Component.esModule).some(function(key) {
+            return "default" !== key && "__esModule" !== key;
+        }) && console.error("named exports are not supported in *.vue files."), Component.options.functional && console.error("[vue-loader] Modal.vue: functional components are not supported with templates, they should use render functions."), 
+        module.exports = Component.exports;
+    }, function(module, exports, __webpack_require__) {
+        var Component = __webpack_require__(0)(__webpack_require__(10), __webpack_require__(17), null, null);
+        Component.options.__file = "/Users/yev.vlasenko2/Projects/vue/vue-js-modal/src/ModalsContainer.vue", 
+        Component.esModule && Object.keys(Component.esModule).some(function(key) {
+            return "default" !== key && "__esModule" !== key;
+        }) && console.error("named exports are not supported in *.vue files."), Component.options.functional && console.error("[vue-loader] ModalsContainer.vue: functional components are not supported with templates, they should use render functions."), 
+        module.exports = Component.exports;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports.default = {
+            name: "VueJsDialog",
+            props: {
+                width: {
+                    type: [ Number, String ],
+                    default: 400
+                },
+                clickToClose: {
+                    type: Boolean,
+                    default: !0
+                },
+                transition: {
+                    type: String,
+                    default: "fade"
+                }
+            },
+            data: function() {
+                return {
+                    params: {},
+                    defaultButtons: [ {
+                        title: "CLOSE"
+                    } ]
+                };
+            },
+            computed: {
+                buttons: function() {
+                    return this.params.buttons || this.defaultButtons;
+                },
+                buttonStyle: function() {
+                    return {
+                        flex: "1 1 " + 100 / this.buttons.length + "%"
+                    };
+                }
+            },
+            methods: {
+                beforeOpened: function(event) {
+                    window.addEventListener("keyup", this.onKeyUp), this.params = event.params || {}, 
+                    this.$emit("before-opened", event);
+                },
+                beforeClosed: function(event) {
+                    window.removeEventListener("keyup", this.onKeyUp), this.params = {}, this.$emit("before-closed", event);
+                },
+                click: function(i, event) {
+                    var source = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "click", button = this.buttons[i];
+                    button && "function" == typeof button.handler ? button.handler(i, event, {
+                        source: source
+                    }) : this.$modal.hide("dialog");
+                },
+                onKeyUp: function(event) {
+                    if (13 === event.which && this.buttons.length > 0) {
+                        var buttonIndex = 1 === this.buttons.length ? 0 : this.buttons.findIndex(function(button) {
+                            return button.default;
+                        });
+                        -1 !== buttonIndex && this.click(buttonIndex, event, "keypress");
+                    }
+                }
+            }
+        };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        });
+        var _index = __webpack_require__(3), _index2 = _interopRequireDefault(_index), _Resizer = __webpack_require__(16), _Resizer2 = _interopRequireDefault(_Resizer), _util = __webpack_require__(4), _parser = __webpack_require__(12);
+        exports.default = {
+            name: "VueJsModal",
+            props: {
+                name: {
+                    required: !0,
+                    type: String
+                },
+                delay: {
+                    type: Number,
+                    default: 0
+                },
+                resizable: {
+                    type: Boolean,
+                    default: !1
+                },
+                adaptive: {
+                    type: Boolean,
+                    default: !1
+                },
+                draggable: {
+                    type: [ Boolean, String ],
+                    default: !1
+                },
+                scrollable: {
+                    type: Boolean,
+                    default: !1
+                },
+                reset: {
+                    type: Boolean,
+                    default: !1
+                },
+                transition: {
+                    type: String
+                },
+                clickToClose: {
+                    type: Boolean,
+                    default: !0
+                },
+                classes: {
+                    type: [ String, Array ],
+                    default: "v--modal"
+                },
+                minWidth: {
+                    type: Number,
+                    default: 0,
+                    validator: function(value) {
+                        return value >= 0;
+                    }
+                },
+                minHeight: {
+                    type: Number,
+                    default: 0,
+                    validator: function(value) {
+                        return value >= 0;
+                    }
+                },
+                maxWidth: {
+                    type: Number,
+                    default: 1 / 0
+                },
+                maxHeight: {
+                    type: Number,
+                    default: 1 / 0
+                },
+                width: {
+                    type: [ Number, String ],
+                    default: 600,
+                    validator: _parser.validateNumber
+                },
+                height: {
+                    type: [ Number, String ],
+                    default: 300,
+                    validator: function(value) {
+                        return "auto" === value || (0, _parser.validateNumber)(value);
+                    }
+                },
+                pivotX: {
+                    type: Number,
+                    default: .5,
+                    validator: function(value) {
+                        return value >= 0 && value <= 1;
+                    }
+                },
+                pivotY: {
+                    type: Number,
+                    default: .5,
+                    validator: function(value) {
+                        return value >= 0 && value <= 1;
+                    }
+                }
+            },
+            components: {
+                Resizer: _Resizer2.default
+            },
+            data: function() {
+                return {
+                    visible: !1,
+                    visibility: {
+                        modal: !1,
+                        overlay: !1
+                    },
+                    shift: {
+                        left: 0,
+                        top: 0
+                    },
+                    modal: {
+                        width: 0,
+                        widthType: "px",
+                        height: 0,
+                        heightType: "px",
+                        renderedHeight: 0
+                    },
+                    window: {
+                        width: 0,
+                        height: 0
+                    },
+                    mutationObserver: null
+                };
+            },
+            watch: {
+                visible: function(value) {
+                    var _this = this;
+                    value ? (this.visibility.overlay = !0, setTimeout(function() {
+                        _this.visibility.modal = !0, _this.$nextTick(function() {
+                            _this.addDraggableListeners(), _this.callAfterEvent(!0);
+                        });
+                    }, this.delay)) : (this.visibility.modal = !1, setTimeout(function() {
+                        _this.visibility.overlay = !1, _this.$nextTick(function() {
+                            _this.removeDraggableListeners(), _this.callAfterEvent(!1);
+                        });
+                    }, this.delay));
+                }
+            },
+            created: function() {
+                this.setInitialSize();
+            },
+            beforeMount: function() {
+                var _this2 = this;
+                if (_index2.default.event.$on("toggle", function(name, state, params) {
+                    name === _this2.name && (void 0 === state && (state = !_this2.visible), _this2.toggle(state, params));
+                }), window.addEventListener("resize", this.onWindowResize), this.onWindowResize(), 
+                this.scrollable && !this.isAutoHeight && console.warn('Modal "' + this.name + '" has scrollable flag set to true but height is not "auto" (' + this.height + ")"), 
+                this.isAutoHeight) {
+                    var MutationObserver = function() {
+                        for (var prefixes = [ "", "WebKit", "Moz", "O", "Ms" ], i = 0; i < prefixes.length; i++) {
+                            var name = prefixes[i] + "MutationObserver";
+                            if (name in window) return window[name];
+                        }
+                        return !1;
+                    }();
+                    MutationObserver && (this.mutationObserver = new MutationObserver(function(mutations) {
+                        _this2.updateRenderedHeight();
+                    }));
+                }
+                this.clickToClose && window.addEventListener("keyup", this.onEscapeKeyUp);
+            },
+            beforeDestroy: function() {
+                window.removeEventListener("resize", this.onWindowResize), this.clickToClose && window.removeEventListener("keyup", this.onEscapeKeyUp);
+            },
+            computed: {
+                isAutoHeight: function() {
+                    return "auto" === this.modal.heightType;
+                },
+                position: function() {
+                    var window = this.window, shift = this.shift, pivotX = this.pivotX, pivotY = this.pivotY, trueModalWidth = this.trueModalWidth, trueModalHeight = this.trueModalHeight, maxLeft = window.width - trueModalWidth, maxTop = window.height - trueModalHeight, left = shift.left + pivotX * maxLeft, top = shift.top + pivotY * maxTop;
+                    return {
+                        left: (0, _util.inRange)(0, maxLeft, left),
+                        top: (0, _util.inRange)(0, maxTop, top)
+                    };
+                },
+                trueModalWidth: function() {
+                    var window = this.window, modal = this.modal, adaptive = this.adaptive, minWidth = this.minWidth, maxWidth = this.maxWidth, value = "%" === modal.widthType ? window.width / 100 * modal.width : modal.width, max = Math.min(window.width, maxWidth);
+                    return adaptive ? (0, _util.inRange)(minWidth, max, value) : value;
+                },
+                trueModalHeight: function() {
+                    var window = this.window, modal = this.modal, isAutoHeight = this.isAutoHeight, adaptive = this.adaptive, maxHeight = this.maxHeight, value = "%" === modal.heightType ? window.height / 100 * modal.height : modal.height;
+                    if (isAutoHeight) return this.modal.renderedHeight;
+                    var max = Math.min(window.height, maxHeight);
+                    return adaptive ? (0, _util.inRange)(this.minHeight, max, value) : value;
+                },
+                overlayClass: function() {
+                    return {
+                        "v--modal-overlay": !0,
+                        scrollable: this.scrollable && this.isAutoHeight
+                    };
+                },
+                backgroundClickClass: function() {
+                    return [ "v--modal-background-click" ];
+                },
+                modalClass: function() {
+                    return [ "v--modal-box", this.classes ];
+                },
+                modalStyle: function() {
+                    return {
+                        top: this.position.top + "px",
+                        left: this.position.left + "px",
+                        width: this.trueModalWidth + "px",
+                        height: this.isAutoHeight ? "auto" : this.trueModalHeight + "px"
+                    };
+                }
+            },
+            methods: {
+                setInitialSize: function() {
+                    var modal = this.modal, width = (0, _parser.parseNumber)(this.width), height = (0, 
+                    _parser.parseNumber)(this.height);
+                    modal.width = width.value, modal.widthType = width.type, modal.height = height.value, 
+                    modal.heightType = height.type;
+                },
+                onEscapeKeyUp: function(event) {
+                    27 === event.which && this.visible && this.$modal.hide(this.name);
+                },
+                onWindowResize: function() {
+                    this.window.width = window.innerWidth, this.window.height = window.innerHeight;
+                },
+                genEventObject: function(params) {
+                    var eventData = {
+                        name: this.name,
+                        timestamp: Date.now(),
+                        canceled: !1,
+                        ref: this.$refs.modal
+                    };
+                    return Object.assign(eventData, params || {});
+                },
+                onModalResize: function(event) {
+                    this.modal.widthType = "px", this.modal.width = event.size.width, this.modal.heightType = "px", 
+                    this.modal.height = event.size.height;
+                    var size = this.modal.size, resizeEvent = this.genEventObject({
+                        size: size
+                    });
+                    this.$emit("resize", resizeEvent);
+                },
+                toggle: function(state, params) {
+                    var reset = this.reset, scrollable = this.scrollable, visible = this.visible;
+                    if (visible !== state) {
+                        var beforeEventName = visible ? "before-close" : "before-open";
+                        "before-open" === beforeEventName ? (document.activeElement && "function" == typeof document.activeElement.blur && document.activeElement.blur(), 
+                        reset && (this.setInitialSize(), this.shift.left = 0, this.shift.top = 0), scrollable && (document.getElementsByTagName("html")[0].classList.add("v--modal-block-scroll"), 
+                        document.body.classList.add("v--modal-block-scroll"))) : scrollable && (document.getElementsByTagName("html")[0].classList.remove("v--modal-block-scroll"), 
+                        document.body.classList.remove("v--modal-block-scroll"));
+                        var stopEventExecution = !1, stop = function() {
+                            stopEventExecution = !0;
+                        }, beforeEvent = this.genEventObject({
+                            stop: stop,
+                            state: state,
+                            params: params
+                        });
+                        this.$emit(beforeEventName, beforeEvent), stopEventExecution || (this.visible = state);
+                    }
+                },
+                getDraggableElement: function() {
+                    var selector = "string" != typeof this.draggable ? ".v--modal-box" : this.draggable;
+                    if (selector) {
+                        var handler = this.$refs.overlay.querySelector(selector);
+                        if (handler) return handler;
+                    }
+                },
+                onBackgroundClick: function() {
+                    this.clickToClose && this.toggle(!1);
+                },
+                addDraggableListeners: function() {
+                    var _this3 = this;
+                    if (this.draggable) {
+                        var dragger = this.getDraggableElement();
+                        if (dragger) {
+                            var startX = 0, startY = 0, cachedShiftX = 0, cachedShiftY = 0, getPosition = function(event) {
+                                return event.touches && event.touches.length > 0 ? event.touches[0] : event;
+                            }, mousedown = function(event) {
+                                var target = event.target;
+                                if (!target || "INPUT" !== target.nodeName) {
+                                    var _getPosition = getPosition(event), clientX = _getPosition.clientX, clientY = _getPosition.clientY;
+                                    document.addEventListener("mousemove", _mousemove), document.addEventListener("mouseup", _mouseup), 
+                                    document.addEventListener("touchmove", _mousemove), document.addEventListener("touchend", _mouseup), 
+                                    startX = clientX, startY = clientY, cachedShiftX = _this3.shift.left, cachedShiftY = _this3.shift.top;
+                                }
+                            }, _mousemove = function(event) {
+                                var _getPosition2 = getPosition(event), clientX = _getPosition2.clientX, clientY = _getPosition2.clientY;
+                                _this3.shift.left = cachedShiftX + clientX - startX, _this3.shift.top = cachedShiftY + clientY - startY, 
+                                event.preventDefault();
+                            }, _mouseup = function _mouseup(event) {
+                                document.removeEventListener("mousemove", _mousemove), document.removeEventListener("mouseup", _mouseup), 
+                                document.removeEventListener("touchmove", _mousemove), document.removeEventListener("touchend", _mouseup), 
+                                event.preventDefault();
+                            };
+                            dragger.addEventListener("mousedown", mousedown), dragger.addEventListener("touchstart", mousedown);
+                        }
+                    }
+                },
+                removeDraggableListeners: function() {},
+                callAfterEvent: function(state) {
+                    state ? this.connectObserver() : this.disconnectObserver();
+                    var eventName = state ? "opened" : "closed", event = this.genEventObject({
+                        state: state
+                    });
+                    this.$emit(eventName, event);
+                },
+                updateRenderedHeight: function() {
+                    this.$refs.modal && (this.modal.renderedHeight = this.$refs.modal.getBoundingClientRect().height);
+                },
+                connectObserver: function() {
+                    this.mutationObserver && this.mutationObserver.observe(this.$refs.modal, {
+                        childList: !0,
+                        attributes: !0,
+                        subtree: !0
+                    });
+                },
+                disconnectObserver: function() {
+                    this.mutationObserver && this.mutationObserver.disconnect();
+                }
+            }
+        };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports.default = {
+            data: function() {
+                return {
+                    uid: 0,
+                    modals: []
+                };
+            },
+            created: function() {
+                this.$modal._setDynamicContainer(this);
+            },
+            methods: {
+                add: function(modal, params, config, events) {
+                    var _this = this, id = this.uid++;
+                    config = config ? Object.assign({}, config) : {}, config.name || (config.name = "_dynamic-modal-" + id), 
+                    this.modals.push({
+                        id: id,
+                        component: modal,
+                        params: params || {},
+                        config: config,
+                        events: events
+                    }), this.$nextTick(function() {
+                        _this.$modal.show(config.name);
+                    });
+                },
+                remove: function(id) {
+                    for (var i in this.modals) if (this.modals[i].id === id) return void this.modals.splice(i, 1);
+                }
+            }
+        };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        });
+        var _util = __webpack_require__(4);
+        exports.default = {
+            name: "VueJsModalResizer",
+            props: {
+                minHeight: {
+                    type: Number,
+                    default: 0
+                },
+                minWidth: {
+                    type: Number,
+                    default: 0
+                }
+            },
+            data: function() {
+                return {
+                    clicked: !1,
+                    size: {}
+                };
+            },
+            mounted: function() {
+                this.$el.addEventListener("mousedown", this.start, !1);
+            },
+            computed: {
+                className: function() {
+                    return {
+                        "vue-modal-resizer": !0,
+                        clicked: this.clicked
+                    };
+                }
+            },
+            methods: {
+                start: function(event) {
+                    this.clicked = !0, window.addEventListener("mousemove", this.mousemove, !1), window.addEventListener("mouseup", this.stop, !1), 
+                    event.stopPropagation(), event.preventDefault();
+                },
+                stop: function() {
+                    this.clicked = !1, window.removeEventListener("mousemove", this.mousemove, !1), 
+                    window.removeEventListener("mouseup", this.stop, !1), this.$emit("resize-stop", {
+                        element: this.$el.parentElement,
+                        size: this.size
+                    });
+                },
+                mousemove: function(event) {
+                    this.resize(event);
+                },
+                resize: function(event) {
+                    var el = this.$el.parentElement;
+                    if (el) {
+                        var width = event.clientX - el.offsetLeft, height = event.clientY - el.offsetTop;
+                        width = (0, _util.inRange)(this.minWidth, window.innerWidth, width), height = (0, 
+                        _util.inRange)(this.minHeight, window.innerHeight, height), this.size = {
+                            width: width,
+                            height: height
+                        }, el.style.width = width + "px", el.style.height = height + "px", this.$emit("resize", {
+                            element: el,
+                            size: this.size
+                        });
+                    }
+                }
+            }
+        };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        });
+        var _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(obj) {
+            return typeof obj;
+        } : function(obj) {
+            return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+        }, types = [ {
+            name: "px",
+            regexp: new RegExp("^[-+]?[0-9]*.?[0-9]+px$")
+        }, {
+            name: "%",
+            regexp: new RegExp("^[-+]?[0-9]*.?[0-9]+%$")
+        }, {
+            name: "px",
+            regexp: new RegExp("^[-+]?[0-9]*.?[0-9]+$")
+        } ], getType = function(value) {
+            if ("auto" === value) return {
+                type: value,
+                value: 0
+            };
+            for (var i = 0; i < types.length; i++) {
+                var type = types[i];
+                if (type.regexp.test(value)) return {
+                    type: type.name,
+                    value: parseFloat(value)
+                };
+            }
+            return {
+                type: "",
+                value: value
+            };
+        }, parseNumber = exports.parseNumber = function(value) {
+            switch (void 0 === value ? "undefined" : _typeof(value)) {
+              case "number":
+                return {
+                    type: "px",
+                    value: value
+                };
+
+              case "string":
+                return getType(value);
+
+              default:
+                return {
+                    type: "",
+                    value: value
+                };
+            }
+        };
+        exports.validateNumber = function(value) {
+            if ("string" == typeof value) {
+                var _value = parseNumber(value);
+                return ("%" === _value.type || "px" === _value.type) && _value.value > 0;
+            }
+            return value >= 0;
+        };
+    }, function(module, exports, __webpack_require__) {
+        exports = module.exports = __webpack_require__(1)(), exports.push([ module.i, "\n.vue-dialog div {\n  box-sizing: border-box;\n}\n.vue-dialog .dialog-flex {\n  width: 100%;\n  height: 100%;\n}\n.vue-dialog .dialog-content {\n  flex: 1 0 auto;\n  width: 100%;\n  padding: 15px;\n  font-size: 14px;\n}\n.vue-dialog .dialog-c-title {\n  font-weight: 600;\n  padding-bottom: 15px;\n}\n.vue-dialog .dialog-c-text {\n}\n.vue-dialog .vue-dialog-buttons {\n  display: flex;\n  flex: 0 1 auto;\n  width: 100%;\n  border-top: 1px solid #eee;\n}\n.vue-dialog .vue-dialog-buttons-none {\n  width: 100%;\n  padding-bottom: 15px;\n}\n.vue-dialog-button {\n  font-size: 12px !important;\n  background: transparent;\n  padding: 0;\n  margin: 0;\n  border: 0;\n  cursor: pointer;\n  box-sizing: border-box;\n  line-height: 40px;\n  height: 40px;\n  color: inherit;\n  font: inherit;\n  outline: none;\n}\n.vue-dialog-button:hover {\n  background: rgba(0, 0, 0, 0.01);\n}\n.vue-dialog-button:active {\n  background: rgba(0, 0, 0, 0.025);\n}\n.vue-dialog-button:not(:first-of-type) {\n  border-left: 1px solid #eee;\n}\n", "" ]);
+    }, function(module, exports, __webpack_require__) {
+        exports = module.exports = __webpack_require__(1)(), exports.push([ module.i, "\n.v--modal-block-scroll {\n  overflow: hidden;\n  width: 100vw;\n}\n.v--modal-overlay {\n  position: fixed;\n  box-sizing: border-box;\n  left: 0;\n  top: 0;\n  width: 100%;\n  height: 100vh;\n  background: rgba(0, 0, 0, 0.2);\n  z-index: 999;\n  opacity: 1;\n}\n.v--modal-overlay.scrollable {\n  height: 100%;\n  min-height: 100vh;\n  overflow-y: auto;\n  -webkit-overflow-scrolling: touch;\n}\n.v--modal-overlay .v--modal-background-click {\n  min-height: 100%;\n  width: 100%;\n  padding-bottom: 10px;\n}\n.v--modal-overlay .v--modal-box {\n  position: relative;\n  overflow: hidden;\n  box-sizing: border-box;\n}\n.v--modal-overlay.scrollable .v--modal-box {\n  margin-bottom: 2px;\n  /* transition: top 0.2s ease; */\n}\n.v--modal {\n  background-color: white;\n  text-align: left;\n  border-radius: 3px;\n  box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);\n  padding: 0;\n}\n.v--modal.v--modal-fullscreen {\n  width: 100vw;\n  height: 100vh;\n  margin: 0;\n  left: 0;\n  top: 0;\n}\n.v--modal-top-right {\n  display: block;\n  position: absolute;\n  right: 0;\n  top: 0;\n}\n.overlay-fade-enter-active,\n.overlay-fade-leave-active {\n  transition: all 0.2s;\n}\n.overlay-fade-enter,\n.overlay-fade-leave-active {\n  opacity: 0;\n}\n.nice-modal-fade-enter-active,\n.nice-modal-fade-leave-active {\n  transition: all 0.4s;\n}\n.nice-modal-fade-enter,\n.nice-modal-fade-leave-active {\n  opacity: 0;\n  transform: translateY(-20px);\n}\n", "" ]);
+    }, function(module, exports, __webpack_require__) {
+        exports = module.exports = __webpack_require__(1)(), exports.push([ module.i, "\n.vue-modal-resizer {\n  display: block;\n  overflow: hidden;\n  position: absolute;\n  width: 12px;\n  height: 12px;\n  right: 0;\n  bottom: 0;\n  z-index: 9999999;\n  background: transparent;\n  cursor: se-resize;\n}\n.vue-modal-resizer::after {\n  display: block;\n  position: absolute;\n  content: '';\n  background: transparent;\n  left: 0;\n  top: 0;\n  width: 0;\n  height: 0;\n  border-bottom: 10px solid #ddd;\n  border-left: 10px solid transparent;\n}\n.vue-modal-resizer.clicked::after {\n  border-bottom: 10px solid #369be9;\n}\n", "" ]);
+    }, function(module, exports, __webpack_require__) {
+        __webpack_require__(23);
+        var Component = __webpack_require__(0)(__webpack_require__(11), __webpack_require__(20), null, null);
+        Component.options.__file = "/Users/yev.vlasenko2/Projects/vue/vue-js-modal/src/Resizer.vue", 
+        Component.esModule && Object.keys(Component.esModule).some(function(key) {
+            return "default" !== key && "__esModule" !== key;
+        }) && console.error("named exports are not supported in *.vue files."), Component.options.functional && console.error("[vue-loader] Resizer.vue: functional components are not supported with templates, they should use render functions."), 
+        module.exports = Component.exports;
+    }, function(module, exports, __webpack_require__) {
+        module.exports = {
+            render: function() {
+                var _vm = this, _h = _vm.$createElement, _c = _vm._self._c || _h;
+                return _c("div", {
+                    attrs: {
+                        id: "modals-container"
+                    }
+                }, _vm._l(_vm.modals, function(modal) {
+                    return _c("modal", _vm._g(_vm._b({
+                        key: modal.id,
+                        on: {
+                            closed: function($event) {
+                                _vm.remove(modal.id);
+                            }
+                        }
+                    }, "modal", modal.config, !1), modal.events), [ _c(modal.component, _vm._b({
+                        tag: "component",
+                        on: {
+                            close: function($event) {
+                                _vm.$modal.hide(modal.config.name);
+                            }
+                        }
+                    }, "component", modal.params, !1)) ], 1);
+                }));
+            },
+            staticRenderFns: []
+        }, module.exports.render._withStripped = !0;
+    }, function(module, exports, __webpack_require__) {
+        module.exports = {
+            render: function() {
+                var _vm = this, _h = _vm.$createElement, _c = _vm._self._c || _h;
+                return _c("modal", {
+                    attrs: {
+                        name: "dialog",
+                        height: "auto",
+                        classes: [ "v--modal", "vue-dialog", this.params.class ],
+                        width: _vm.width,
+                        "pivot-y": .3,
+                        adaptive: !0,
+                        clickToClose: _vm.clickToClose,
+                        transition: _vm.transition
+                    },
+                    on: {
+                        "before-open": _vm.beforeOpened,
+                        "before-close": _vm.beforeClosed,
+                        opened: function($event) {
+                            _vm.$emit("opened", $event);
+                        },
+                        closed: function($event) {
+                            _vm.$emit("closed", $event);
+                        }
+                    }
+                }, [ _c("div", {
+                    staticClass: "dialog-content"
+                }, [ _vm.params.title ? _c("div", {
+                    staticClass: "dialog-c-title",
+                    domProps: {
+                        innerHTML: _vm._s(_vm.params.title || "")
+                    }
+                }) : _vm._e(), _vm._v(" "), _c("div", {
+                    staticClass: "dialog-c-text",
+                    domProps: {
+                        innerHTML: _vm._s(_vm.params.text || "")
+                    }
+                }) ]), _vm._v(" "), _vm.buttons ? _c("div", {
+                    staticClass: "vue-dialog-buttons"
+                }, _vm._l(_vm.buttons, function(button, i) {
+                    return _c("button", {
+                        key: i,
+                        class: button.class || "vue-dialog-button",
+                        style: _vm.buttonStyle,
+                        attrs: {
+                            type: "button"
+                        },
+                        domProps: {
+                            innerHTML: _vm._s(button.title)
+                        },
+                        on: {
+                            click: function($event) {
+                                $event.stopPropagation(), _vm.click(i, $event);
+                            }
+                        }
+                    }, [ _vm._v("\n      " + _vm._s(button.title) + "\n    ") ]);
+                })) : _c("div", {
+                    staticClass: "vue-dialog-buttons-none"
+                }) ]);
+            },
+            staticRenderFns: []
+        }, module.exports.render._withStripped = !0;
+    }, function(module, exports, __webpack_require__) {
+        module.exports = {
+            render: function() {
+                var _vm = this, _h = _vm.$createElement, _c = _vm._self._c || _h;
+                return _c("transition", {
+                    attrs: {
+                        name: "overlay-fade"
+                    }
+                }, [ _vm.visibility.overlay ? _c("div", {
+                    ref: "overlay",
+                    class: _vm.overlayClass,
+                    attrs: {
+                        "aria-expanded": _vm.visible.toString(),
+                        "data-modal": _vm.name
+                    }
+                }, [ _c("div", {
+                    class: _vm.backgroundClickClass,
+                    on: {
+                        mousedown: function($event) {
+                            $event.stopPropagation(), _vm.onBackgroundClick($event);
+                        },
+                        touchstart: function($event) {
+                            $event.stopPropagation(), _vm.onBackgroundClick($event);
+                        }
+                    }
+                }, [ _c("div", {
+                    staticClass: "v--modal-top-right"
+                }, [ _vm._t("top-right") ], 2), _vm._v(" "), _c("transition", {
+                    attrs: {
+                        name: _vm.transition
+                    }
+                }, [ _vm.visibility.modal ? _c("div", {
+                    ref: "modal",
+                    class: _vm.modalClass,
+                    style: _vm.modalStyle,
+                    on: {
+                        mousedown: function($event) {
+                            $event.stopPropagation();
+                        },
+                        touchstart: function($event) {
+                            $event.stopPropagation();
+                        }
+                    }
+                }, [ _vm._t("default"), _vm._v(" "), _vm.resizable && !_vm.isAutoHeight ? _c("resizer", {
+                    attrs: {
+                        "min-width": _vm.minWidth,
+                        "min-height": _vm.minHeight
+                    },
+                    on: {
+                        resize: _vm.onModalResize
+                    }
+                }) : _vm._e() ], 2) : _vm._e() ]) ], 1) ]) : _vm._e() ]);
+            },
+            staticRenderFns: []
+        }, module.exports.render._withStripped = !0;
+    }, function(module, exports, __webpack_require__) {
+        module.exports = {
+            render: function() {
+                var _vm = this, _h = _vm.$createElement;
+                return (_vm._self._c || _h)("div", {
+                    class: _vm.className
+                });
+            },
+            staticRenderFns: []
+        }, module.exports.render._withStripped = !0;
+    }, function(module, exports, __webpack_require__) {
+        var content = __webpack_require__(13);
+        "string" == typeof content && (content = [ [ module.i, content, "" ] ]), content.locals && (module.exports = content.locals);
+        __webpack_require__(2)("237a7ca4", content, !1);
+    }, function(module, exports, __webpack_require__) {
+        var content = __webpack_require__(14);
+        "string" == typeof content && (content = [ [ module.i, content, "" ] ]), content.locals && (module.exports = content.locals);
+        __webpack_require__(2)("2790b368", content, !1);
+    }, function(module, exports, __webpack_require__) {
+        var content = __webpack_require__(15);
+        "string" == typeof content && (content = [ [ module.i, content, "" ] ]), content.locals && (module.exports = content.locals);
+        __webpack_require__(2)("02ec91af", content, !1);
+    }, function(module, exports) {
+        module.exports = function(parentId, list) {
+            for (var styles = [], newStyles = {}, i = 0; i < list.length; i++) {
+                var item = list[i], id = item[0], css = item[1], media = item[2], sourceMap = item[3], part = {
+                    id: parentId + ":" + i,
+                    css: css,
+                    media: media,
+                    sourceMap: sourceMap
+                };
+                newStyles[id] ? newStyles[id].parts.push(part) : styles.push(newStyles[id] = {
+                    id: id,
+                    parts: [ part ]
+                });
+            }
+            return styles;
+        };
+    } ]);
+});
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _axios = __webpack_require__(23);
+
+var _axios2 = _interopRequireDefault(_axios);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = {
+  name: 'depositModal',
+  data: function data() {
+    return {
+      deposited: false,
+      depositAmount: null
+    };
+  },
+
+  methods: {
+    show: function show() {
+      this.$modal.show('depositModal');
+    },
+    getDepositAmount: function getDepositAmount() {
+      return this.depositAmount;
+    },
+    deposit: function deposit() {
+      if (!(this.depositAmount && this.depositAmount > 0)) {
+        return;
+      }
+
+      var self = this;
+      _axios2.default.post("/home/enterDeposit", { deposit: self.depositAmount }).then(function (response) {
+        self.$emit('deposit', self.depositAmount);
+        self.deposited = true;
+        self.depositAmount = null;
+        self.$modal.hide('depositModal');
+      }).catch(function (e) {
+        console.log(data);
+      });
+    },
+    beforeOpen: function beforeOpen(event) {
+      this.deposited = false;
+    },
+    beforeClose: function beforeClose(event) {
+      if (!this.deposited) {
+        /*
+        Stopping close event execution
+        */
+        event.stop();
+      }
+    }
+  }
+}; //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/***/ }),
+/* 44 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue__ = __webpack_require__(43);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue__);
+/* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue__[key]; }) }(__WEBPACK_IMPORT_KEY__));
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_69d18fb4_hasScoped_false_buble_transforms_node_modules_vue_loader_lib_selector_type_template_index_0_depositModal_vue__ = __webpack_require__(47);
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(45)
+}
+var normalizeComponent = __webpack_require__(9)
+/* script */
+
+
+/* template */
+
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = null
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_depositModal_vue___default.a,
+  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_69d18fb4_hasScoped_false_buble_transforms_node_modules_vue_loader_lib_selector_type_template_index_0_depositModal_vue__["a" /* default */],
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "wwwroot\\components\\depositModal.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-69d18fb4", Component.options)
+  } else {
+    hotAPI.reload("data-v-69d18fb4", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+/* harmony default export */ __webpack_exports__["default"] = (Component.exports);
+
+
+/***/ }),
+/* 45 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(46);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(7)("2fa6b377", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js?sourceMap!../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-69d18fb4\",\"scoped\":false,\"hasInlineConfig\":false}!../../node_modules/sass-loader/lib/loader.js!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./depositModal.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js?sourceMap!../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-69d18fb4\",\"scoped\":false,\"hasInlineConfig\":false}!../../node_modules/sass-loader/lib/loader.js!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./depositModal.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 46 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(6)(true);
+// imports
+
+
+// module
+exports.push([module.i, "\n.error-modal {\n  transition: box-shadow 1s;\n}\n.error-modal.has-bugs {\n    box-shadow: 0 24px 80px -2px rgba(255, 0, 0, 0.6) !important;\n}\n.error-modal-content {\n  padding: 10px;\n  text-align: center;\n}\n.error-modal-content .bugs-label {\n    text-transform: uppercase;\n    font-size: 60px;\n    font-weight: 300;\n    letter-spacing: 2px;\n    padding: 40px;\n}\n.error-modal-content button {\n    width: 180px;\n}\n.error-modal-content sub {\n    color: #EC625F;\n    transition: opacity 0.25s;\n}\n", "", {"version":3,"sources":["C:/Users/Ibra/Documents/Projects/Bede.SlotMachine/Bede.SlotMachine.WebUI/wwwroot/components/depositModal.vue"],"names":[],"mappings":";AAAA;EACE,0BAA0B;CAAE;AAC5B;IACE,6DAA6D;CAAE;AAEnE;EACE,cAAc;EACd,mBAAmB;CAAE;AACrB;IACE,0BAA0B;IAC1B,gBAAgB;IAChB,iBAAiB;IACjB,oBAAoB;IACpB,cAAc;CAAE;AAClB;IACE,aAAa;CAAE;AACjB;IACE,eAAe;IACf,0BAA0B;CAAE","file":"depositModal.vue","sourcesContent":[".error-modal {\n  transition: box-shadow 1s; }\n  .error-modal.has-bugs {\n    box-shadow: 0 24px 80px -2px rgba(255, 0, 0, 0.6) !important; }\n\n.error-modal-content {\n  padding: 10px;\n  text-align: center; }\n  .error-modal-content .bugs-label {\n    text-transform: uppercase;\n    font-size: 60px;\n    font-weight: 300;\n    letter-spacing: 2px;\n    padding: 40px; }\n  .error-modal-content button {\n    width: 180px; }\n  .error-modal-content sub {\n    color: #EC625F;\n    transition: opacity 0.25s; }\n"],"sourceRoot":""}]);
+
+// exports
+
+
+/***/ }),
+/* 47 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "modal",
+    {
+      attrs: {
+        name: "depositModal",
+        classes: ["v--modal", "error-modal", !_vm.deposited && "has-bugs"],
+        "pivot-y": 0.2,
+        width: 400,
+        height: 300
+      },
+      on: { "before-open": _vm.beforeOpen, "before-close": _vm.beforeClose }
+    },
+    [
+      _c("div", { staticClass: "error-modal-content" }, [
+        _c("div", { staticClass: "bugs-label" }, [_vm._v("Deposit")]),
+        _vm._v(" "),
+        _c("div", { staticStyle: { padding: "10px" } }, [
+          _vm._v(
+            "\n      You will be able to close the window only if you deposit :)\n    "
+          )
+        ]),
+        _vm._v(" "),
+        _c("input", {
+          directives: [
+            {
+              name: "model",
+              rawName: "v-model.number",
+              value: _vm.depositAmount,
+              expression: "depositAmount",
+              modifiers: { number: true }
+            }
+          ],
+          attrs: {
+            type: "number",
+            min: "1",
+            placeholder: "Enter deposit",
+            oninput: "validity.valid||(value='');"
+          },
+          domProps: { value: _vm.depositAmount },
+          on: {
+            input: function($event) {
+              if ($event.target.composing) {
+                return
+              }
+              _vm.depositAmount = _vm._n($event.target.value)
+            },
+            blur: function($event) {
+              _vm.$forceUpdate()
+            }
+          }
+        }),
+        _vm._v(" "),
+        _c("button", { on: { click: _vm.deposit } }, [_vm._v("Confirm")])
+      ])
+    ]
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+var esExports = { render: render, staticRenderFns: staticRenderFns }
+/* harmony default export */ __webpack_exports__["a"] = (esExports);
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-69d18fb4", esExports)
+  }
+}
 
 /***/ })
 /******/ ]);

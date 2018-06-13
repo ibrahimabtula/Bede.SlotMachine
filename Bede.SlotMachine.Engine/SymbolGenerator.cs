@@ -1,5 +1,6 @@
 ﻿using Bede.SlotMachine.Engine.Enums;
 using Bede.SlotMachine.Engine.Symbols;
+using Bede.SlotMachine.Engine.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,7 +26,7 @@ namespace Bede.SlotMachine.Engine
         /// Generates a random symbol according to their probability
         /// </summary>
         /// <returns></returns>
-        public ISlotSymbol Next()
+        internal ISlotSymbol Next()
         {
             double diceRoll = ThreadSafeRandom.Next();
 
@@ -41,20 +42,6 @@ namespace Bede.SlotMachine.Engine
             }
 
             return default(ISlotSymbol);
-        }
-
-    }
-
-    class ThreadSafeRandom
-    {
-        private static Random random = new Random();
-
-        public static double Next()
-        {
-            lock (random)
-            {
-                return random.NextDouble();
-            }
         }
     }
 }

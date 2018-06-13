@@ -8,7 +8,7 @@ namespace Bede.SlotMachine
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-
+            // Just simple test
             var engine = new SlotEngine();
             engine.EnterDeposit(200);
             engine.Stake = 20;

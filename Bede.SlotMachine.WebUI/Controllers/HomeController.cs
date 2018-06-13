@@ -25,6 +25,14 @@ namespace Bede.SlotMachine.WebUI.Controllers
         }
 
         [HttpGet]
+        public JsonResult GetBalance()
+        {
+            var balance = slotEngine.GetBalance();
+
+            return Json(new { OK = true, Message = "Balance", Data = balance }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
         public JsonResult GetLastSpin()
         {
             var last = slotEngine.SpinHistory.LastOrDefault();
@@ -37,6 +45,12 @@ namespace Bede.SlotMachine.WebUI.Controllers
             return Json(new { OK = false, Message = "No previous plays, enter deposit and stake to start new game", Data = last }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpPost]
+        public JsonResult StartAgain()
+        {
+            slotEngine.Reset();
+            return Json(new { OK = true, Message = "Welcome to this slot game" }, JsonRequestBehavior.AllowGet);
+        }
 
         [HttpPost]
         public JsonResult EnterStake(double? stake)

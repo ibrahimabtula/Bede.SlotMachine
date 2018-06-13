@@ -1,4 +1,8 @@
-﻿using Bede.SlotMachine.Engine.Symbols;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Bede.SlotMachine.Engine.Entities;
+using Bede.SlotMachine.Engine.MappingProfiles;
+using Bede.SlotMachine.Engine.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +18,29 @@ namespace Bede.SlotMachine.Engine
         private double _currentWin = 0;
         private bool _staked = false;
 
-        private IList<ISpinResult> _spinHistory;
+        private IMapper mapper;
+
+        private IList<SpinResultDto> _spinHistory;
         
         public SlotEngine()
         {
-            _spinHistory = new List<ISpinResult>();
+            _spinHistory = new List<SpinResultDto>();
+
+            InitMapper();
         }
 
-        public IEnumerable<ISpinResult> SpinHistory
+        private void InitMapper()
+        {
+            var mapperConfiguration = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new SpinResultProfile());
+                cfg.AddProfile(new SpinRowResultProfile());
+                cfg.AddProfile(new SlotSymbolProfile());
+            });
+            mapper = mapperConfiguration.CreateMapper();
+        }
+
+        public IEnumerable<SpinResultDto> SpinHistory
         {
             get { return _spinHistory; }
         }
@@ -65,7 +84,7 @@ namespace Bede.SlotMachine.Engine
             return (true, null);
         }
 
-        private void AddToHistory(ISpinResult spin)
+        private void AddToHistory(SpinResultDto spin)
         {
             this._spinHistory.Add(spin);
         }
@@ -79,10 +98,6 @@ namespace Bede.SlotMachine.Engine
                 Symbols = new List<ISlotSymbol>(_symbolCount)
             };
 
-            //spinRowResult.Symbols.Add(new WildcardSymbol());
-            //spinRowResult.Symbols.Add(new PineappleSymbol());
-            //spinRowResult.Symbols.Add(new PineappleSymbol());
-
             for (int i = 0; i < _symbolCount; i++)
             {
                 spinRowResult.Symbols.Add(symbolGenerator.Next());
@@ -91,7 +106,7 @@ namespace Bede.SlotMachine.Engine
             return spinRowResult;
         }
 
-        public IEnumerable<SpinRowResult> GenerateDimensions()
+        private IEnumerable<SpinRowResult> GenerateDimensions()
         {          
             var dimensions = new List<SpinRowResult>(_dimensionCount);
 
@@ -126,7 +141,7 @@ namespace Bede.SlotMachine.Engine
             });
         }
 
-        public (ISpinResult spin, bool success, string message) Spin()
+        public (SpinResultDto spin, bool success, string message) Spin()
         {
             var spinable = IsSpinable();
             if (!spinable.valid)
@@ -140,17 +155,26 @@ namespace Bede.SlotMachine.Engine
             _currentWin = Math.Round(winninDimensions.Sum(d => d.Symbols.Sum(s => s.Coefficient)) * _stake, 2, MidpointRounding.AwayFromZero);
             _balance = Math.Round(_balance - _stake + _currentWin, 2 , MidpointRounding.AwayFromZero);
 
-            var spin = new SpinResult()
+            var dto = new SpinResultDto()
             {
                 Date = DateTime.Now,
                 Balance = _balance,
                 Stake = _stake,
                 Win = _currentWin,
-                Dimensions = dimmensions
+                Dimensions = dimmensions.AsQueryable().ProjectTo<SpinRowResultDto>()
             };
 
-            AddToHistory(spin);
-            return (spin, true, "Spinned");
+            //var dto = mapper.Map<SpinResultDto>(spin);
+            AddToHistory(dto);
+            return (dto, true, "Spinned");
+        }
+
+        public void Reset()
+        {
+            _balance = 0;
+            _stake = 0;
+            _currentWin = 0;
+            _spinHistory = new List<SpinResultDto>();
         }
     }
 }

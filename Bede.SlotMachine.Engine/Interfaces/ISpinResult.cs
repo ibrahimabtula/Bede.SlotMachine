@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Bede.SlotMachine.Engine.Entities;
+using Bede.SlotMachine.Engine.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,6 +18,6 @@ namespace Bede.SlotMachine.Engine
 
         string Message { get; set; }
 
-        IEnumerable<SpinRowResult> Dimensions { get; set; }
+        IEnumerable<ISpinRowResult> Dimensions { get; set; }
     }
 }

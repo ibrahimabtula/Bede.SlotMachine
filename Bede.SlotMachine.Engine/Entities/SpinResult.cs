@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Bede.SlotMachine.Engine.Interfaces;
+using System;
 using System.Collections.Generic;
 
-namespace Bede.SlotMachine.Engine
+namespace Bede.SlotMachine.Engine.Entities
 {
     public class SpinResult : ISpinResult
     {
@@ -13,7 +14,7 @@ namespace Bede.SlotMachine.Engine
 
         public double Balance { get; set; }
 
-        public IEnumerable<SpinRowResult> Dimensions { get; set; }
+        public IEnumerable<ISpinRowResult> Dimensions { get; set; }
         public string Message { get; set; }
     }
 }

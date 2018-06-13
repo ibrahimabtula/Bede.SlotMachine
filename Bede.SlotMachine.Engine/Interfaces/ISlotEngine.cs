@@ -4,7 +4,7 @@ namespace Bede.SlotMachine.Engine
 {
     interface ISlotEngine
     {
-        IEnumerable<ISpinResult> SpinHistory { get; }
+        IEnumerable<SpinResultDto> SpinHistory { get; }
 
         double Stake { get; set; }
 
@@ -14,7 +14,9 @@ namespace Bede.SlotMachine.Engine
 
         double GetCurrentWin();
 
-        (ISpinResult spin, bool success, string message) Spin();
+        void Reset();
+
+        (SpinResultDto spin, bool success, string message) Spin();
 
     }
 }

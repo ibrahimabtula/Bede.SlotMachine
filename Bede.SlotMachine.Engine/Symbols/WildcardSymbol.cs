@@ -2,6 +2,7 @@
 
 namespace Bede.SlotMachine.Engine.Symbols
 {
+#pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode() 
     public class WildcardSymbol : ISlotSymbol
     {
         public SymbolTypes Type => SymbolTypes.Wildcard;
@@ -21,4 +22,5 @@ namespace Bede.SlotMachine.Engine.Symbols
             return true;
         }
     }
+#pragma warning restore CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
 }

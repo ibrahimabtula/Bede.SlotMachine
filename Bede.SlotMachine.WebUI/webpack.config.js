@@ -3,11 +3,7 @@
 module.exports = {
     entry: {
         mainApp: './index.js',
-        // vendor: [
-        //     "jquery",
-        //     "bootstrap"
-        // ],
-        //mainCss: './wwwroot/css/site.scss'
+        //mainCss: './wwwroot/styles/main.css'
     },
     devtool: 'source-map',
     output: {
