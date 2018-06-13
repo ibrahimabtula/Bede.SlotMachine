@@ -19,7 +19,7 @@ namespace Bede.SlotMachine.Engine
         private bool _staked = false;
 
         private IMapper mapper;
-
+        private MapperConfiguration mapperConfiguration;
         private IList<SpinResultDto> _spinHistory;
         
         public SlotEngine()
@@ -31,7 +31,7 @@ namespace Bede.SlotMachine.Engine
 
         private void InitMapper()
         {
-            var mapperConfiguration = new MapperConfiguration(cfg =>
+            mapperConfiguration = new MapperConfiguration(cfg =>
             {
                 cfg.AddProfile(new SpinResultProfile());
                 cfg.AddProfile(new SpinRowResultProfile());
@@ -161,7 +161,7 @@ namespace Bede.SlotMachine.Engine
                 Balance = _balance,
                 Stake = _stake,
                 Win = _currentWin,
-                Dimensions = dimmensions.AsQueryable().ProjectTo<SpinRowResultDto>()
+                Dimensions = mapper.Map<List<SpinRowResultDto>>(dimmensions)
             };
 
             //var dto = mapper.Map<SpinResultDto>(spin);

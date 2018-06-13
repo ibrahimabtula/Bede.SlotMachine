@@ -1,10 +1,13 @@
 <template>
     <div>              
         <h3 class="gray">Enter deposit and set stake size</h3>
-        <div class="form-group margin-top_25px">
+        <div class="form-group form-inline margin-top_25px">
             <button class="btn btn-primary" v-on:click="enterDeposit">Deposit</button>
             <button class="btn btn-warning margin-left_30" v-on:click="startAgain">Start again</button>
-            <input v-model="stake" class="form-control pull-right" type="number" placeholder="Enter stake" min="0" oninput="validity.valid||(value='');"/>
+            <div class="pull-right">
+                <label for="stake">Stake</label>
+                <input v-model="stake" id="stake" class="" type="number" placeholder="Enter stake" min="0" oninput="validity.valid||(value='');"/>
+            </div>
         </div>
         <table class="table" style="margin-top:45px">
             <thead>
@@ -144,7 +147,7 @@ export default {
             })             
         },
         spin: function(){
-            if(this.balance - this.stake >= 0){
+            if(this.stake > 0 && this.balance - this.stake >= 0){
                 this.spinning = true
             }
 

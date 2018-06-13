@@ -204,7 +204,7 @@ exports.default = {
             });
         },
         spin: function spin() {
-            if (this.balance - this.stake >= 0) {
+            if (this.stake > 0 && this.balance - this.stake >= 0) {
                 this.spinning = true;
             }
 
@@ -241,6 +241,9 @@ exports.default = {
         }
     }
 }; //
+//
+//
+//
 //
 //
 //
@@ -3962,7 +3965,7 @@ var render = function() {
         _vm._v("Enter deposit and set stake size")
       ]),
       _vm._v(" "),
-      _c("div", { staticClass: "form-group margin-top_25px" }, [
+      _c("div", { staticClass: "form-group form-inline margin-top_25px" }, [
         _c(
           "button",
           { staticClass: "btn btn-primary", on: { click: _vm.enterDeposit } },
@@ -3978,32 +3981,36 @@ var render = function() {
           [_vm._v("Start again")]
         ),
         _vm._v(" "),
-        _c("input", {
-          directives: [
-            {
-              name: "model",
-              rawName: "v-model",
-              value: _vm.stake,
-              expression: "stake"
-            }
-          ],
-          staticClass: "form-control pull-right",
-          attrs: {
-            type: "number",
-            placeholder: "Enter stake",
-            min: "0",
-            oninput: "validity.valid||(value='');"
-          },
-          domProps: { value: _vm.stake },
-          on: {
-            input: function($event) {
-              if ($event.target.composing) {
-                return
+        _c("div", { staticClass: "pull-right" }, [
+          _c("label", { attrs: { for: "stake" } }, [_vm._v("Stake")]),
+          _vm._v(" "),
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.stake,
+                expression: "stake"
               }
-              _vm.stake = $event.target.value
+            ],
+            attrs: {
+              id: "stake",
+              type: "number",
+              placeholder: "Enter stake",
+              min: "0",
+              oninput: "validity.valid||(value='');"
+            },
+            domProps: { value: _vm.stake },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.stake = $event.target.value
+              }
             }
-          }
-        })
+          })
+        ])
       ]),
       _vm._v(" "),
       _c(
