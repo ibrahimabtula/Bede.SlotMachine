@@ -3982,7 +3982,7 @@ var render = function() {
         ),
         _vm._v(" "),
         _c("div", { staticClass: "pull-right" }, [
-          _c("label", { attrs: { for: "stake" } }, [_vm._v("Stake")]),
+          _c("label", { attrs: { for: "stake" } }, [_vm._v("Stake:")]),
           _vm._v(" "),
           _c("input", {
             directives: [

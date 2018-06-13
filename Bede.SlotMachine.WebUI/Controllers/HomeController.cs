@@ -1,19 +1,16 @@
-﻿using System.Linq;
+﻿using Bede.SlotMachine.Engine;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace Bede.SlotMachine.WebUI.Controllers
 {
     public class HomeController : Controller
     {
-        private static Engine.SlotEngine slotEngine;
+        private static ISlotEngine slotEngine;
 
         static HomeController()
         {
-            slotEngine = new Engine.SlotEngine();
-        }
-
-        public HomeController()
-        {
+            slotEngine = DependencyResolver.Current.GetService<ISlotEngine>();
         }
 
         public ActionResult Index()

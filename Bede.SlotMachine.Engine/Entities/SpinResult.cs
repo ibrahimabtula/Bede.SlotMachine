@@ -15,6 +15,7 @@ namespace Bede.SlotMachine.Engine.Entities
         public double Balance { get; set; }
 
         public IEnumerable<ISpinRowResult> Dimensions { get; set; }
+
         public string Message { get; set; }
     }
 }

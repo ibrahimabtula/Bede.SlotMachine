@@ -13,6 +13,13 @@ namespace Bede.SlotMachine
             engine.EnterDeposit(200);
             engine.Stake = 20;
             var res = engine.Spin();
+
+            if(res.success)
+            {
+                if (200 - 20 + res.spin.Win != engine.GetBalance())
+                    throw new ApplicationException();
+
+            }
         }
     }
 }

@@ -5,7 +5,7 @@
             <button class="btn btn-primary" v-on:click="enterDeposit">Deposit</button>
             <button class="btn btn-warning margin-left_30" v-on:click="startAgain">Start again</button>
             <div class="pull-right">
-                <label for="stake">Stake</label>
+                <label for="stake">Stake:</label>
                 <input v-model="stake" id="stake" class="" type="number" placeholder="Enter stake" min="0" oninput="validity.valid||(value='');"/>
             </div>
         </div>

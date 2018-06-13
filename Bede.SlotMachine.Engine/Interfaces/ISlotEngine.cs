@@ -2,9 +2,9 @@
 
 namespace Bede.SlotMachine.Engine
 {
-    interface ISlotEngine
+    public interface ISlotEngine
     {
-        IEnumerable<SpinResultDto> SpinHistory { get; }
+        IReadOnlyCollection<SpinResultDto> SpinHistory { get; }
 
         double Stake { get; set; }
 

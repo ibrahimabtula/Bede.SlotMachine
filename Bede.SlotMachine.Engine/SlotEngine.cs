@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Bede.SlotMachine.Engine.Entities;
 using Bede.SlotMachine.Engine.MappingProfiles;
 using Bede.SlotMachine.Engine.Symbols;
@@ -16,11 +15,9 @@ namespace Bede.SlotMachine.Engine
         private double _balance;
         private double _stake;
         private double _currentWin = 0;
-        private bool _staked = false;
 
         private IMapper mapper;
-        private MapperConfiguration mapperConfiguration;
-        private IList<SpinResultDto> _spinHistory;
+        private List<SpinResultDto> _spinHistory;
         
         public SlotEngine()
         {
@@ -31,7 +28,7 @@ namespace Bede.SlotMachine.Engine
 
         private void InitMapper()
         {
-            mapperConfiguration = new MapperConfiguration(cfg =>
+            var mapperConfiguration = new MapperConfiguration(cfg =>
             {
                 cfg.AddProfile(new SpinResultProfile());
                 cfg.AddProfile(new SpinRowResultProfile());
@@ -40,9 +37,9 @@ namespace Bede.SlotMachine.Engine
             mapper = mapperConfiguration.CreateMapper();
         }
 
-        public IEnumerable<SpinResultDto> SpinHistory
+        public IReadOnlyCollection<SpinResultDto> SpinHistory
         {
-            get { return _spinHistory; }
+            get { return _spinHistory.AsReadOnly(); }
         }
 
         public double Stake
@@ -141,7 +138,7 @@ namespace Bede.SlotMachine.Engine
             });
         }
 
-        public (SpinResultDto spin, bool success, string message) Spin()
+        private (ISpinResult spin, bool success, string message) SpinInner()
         {
             var spinable = IsSpinable();
             if (!spinable.valid)
@@ -153,20 +150,29 @@ namespace Bede.SlotMachine.Engine
             var winninDimensions = GetWinningDimensions(dimmensions);
 
             _currentWin = Math.Round(winninDimensions.Sum(d => d.Symbols.Sum(s => s.Coefficient)) * _stake, 2, MidpointRounding.AwayFromZero);
-            _balance = Math.Round(_balance - _stake + _currentWin, 2 , MidpointRounding.AwayFromZero);
+            _balance = Math.Round(_balance - _stake + _currentWin, 2, MidpointRounding.AwayFromZero);
 
-            var dto = new SpinResultDto()
+            var spinResult = new SpinResult()
             {
                 Date = DateTime.Now,
                 Balance = _balance,
                 Stake = _stake,
                 Win = _currentWin,
-                Dimensions = mapper.Map<List<SpinRowResultDto>>(dimmensions)
+                Dimensions = dimmensions
             };
 
-            //var dto = mapper.Map<SpinResultDto>(spin);
+            return (spinResult, true, "Spinned");
+        }
+
+        public (SpinResultDto spin, bool success, string message) Spin()
+        {
+            var (spin, success, message) = SpinInner();
+
+            var dto = mapper.Map<SpinResultDto>(spin);
+
             AddToHistory(dto);
-            return (dto, true, "Spinned");
+
+            return (dto, success, message);
         }
 
         public void Reset()
