@@ -1,4 +1,4 @@
-Initial load takes bit time because it's restoring all the packages.
+First build takes bit time because it's restoring all the packages.
 
 The "game" saves it's state only for the lifetime of the application in IIS, if you rebuild and restart the application it will start from beginning.
 I didn't use any database to save the state as it's not required and did't want to overcomplicate the application.
