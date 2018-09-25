@@ -67,7 +67,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .error-modal {
     transition: box-shadow 1s;
     &.has-bugs {
